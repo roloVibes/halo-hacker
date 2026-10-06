@@ -17,6 +17,37 @@ halo-hacker is what vibes-hacker was trying to be ("the offensive org you instal
 now with the piece that makes a hosted/personal version actually work: **ingestion**. Ship the
 machine empty; each user's own corpus fills it.
 
+## The standing boundary rule (decided 2026-10-04)
+
+> If it moves bytes between machines or gates what crosses a boundary → **halo-harness**
+> (chassis). If it's about what the agent knows or does with knowledge → **halo-hacker**
+> (the product on the chassis).
+
+**Swarms — who runs what (clarified 2026-10-04).** You run swarms OF halo-hacker positions ON
+halo-harness. The harness provides the machinery (Agent-tool delegation, roles/lanes, governor
+pacing, background tasks, containment — mechanically a swarm is just N delegated sub-agents with
+roles, which already exists); halo-hacker provides the definition (which positions exist, their
+skills, checklist ledgers, expected-output contracts, governor priorities, human-gate flags, the
+methodology they operate under). A coding swarm and a pentest swarm use identical chassis
+machinery — the difference is entirely the org definition riding on it. Consequences:
+
+1. **For rolo, the pilot is serverMode** (the live org). halo-hacker is the distributable form
+   of the same pilot — rolo doesn't run halo-hacker himself.
+2. **Swarm SAFETY is harness-enforced; swarm DOCTRINE is pilot-declared.** The position carries
+   the human-gate flag; chassis containment is what actually halts execution and waits for
+   approval. Doctrine never relies on the model's good behavior (the brood RCE lesson).
+3. **Federation is harness-only** (see halo-harness-cyber PLAN.md §Fleet layer). halo-hacker
+   contains no federation code — it consumes the chassis: authenticated ingestion into a shared
+   vault, privacy filter calling the chassis PII engine.
+4. What ruflo calls "swarm coordination" is mostly machinery we deliberately skipped (BFT,
+   queen topologies). Our version: positions fan out across census-bound lanes, governor paces,
+   priority keeps the orchestrator alive.
+
+**Position schema — lift verbatim from halo-harness-cyber PLAN.md §"Two role layers"** (skills
++ halo lane + markdown checklist ledger + expected-output contract + governor priority +
+human-gate flag) when build-order step 4 (shippable skeleton) defines the org. Cross-reference,
+do not copy-and-drift: if the schema changes there, it changes here.
+
 ## Scope — everything but the exploit data
 
 **IN (the product):**
@@ -131,7 +162,8 @@ mistake, and it's on the What-NOT-to-do list of both plans.
 2. Live end-to-end against a real Ollama lane (both endpoints were down at build time —
    model paths are mock-tested only, NOT yet proven live).
 3. Dedupe-by-meaning (the hard 20%): diff-the-distillate against the existing entry.
-4. Methodology docs + empty-vault scaffold (the shippable skeleton).
+4. Methodology docs + empty-vault scaffold (the shippable skeleton) — position schema lifted
+   verbatim from halo-harness-cyber (see the boundary-rule section above).
 5. Leakcheck publish gate + scrub pass over anything methodological that derives from live work.
 
 ## Status — v0.1 (2026-10-04)
