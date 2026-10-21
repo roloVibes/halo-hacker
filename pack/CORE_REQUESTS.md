@@ -67,3 +67,13 @@ clearly-labeled compatibility adapter or stays without that surface.
 None beyond the above. The manifest fields 3.2.0.0 R1 specifies (id,
 namespace, halo_api, contributions, permissions.requested, migrations)
 are sufficient for everything Halo Hacker ships in Milestones 1–4.
+
+## CR-6 — Documented Caido MCP/API interface
+
+- **Status:** NOT ON THE ROADMAP. Caido's local API surface (HTTP history,
+  site map, request retrieval) has no Halo-side MCP integration, and the
+  pack targets Caido via `tools/caido_adapter.py` (draft, read-only).
+- **Needed by:** Phase 6 traffic analysis without export/import round trips.
+- **Interim:** the adapter's normalization layer is fixture-pinned and the
+  transport layer refuses to run unverified (fail loud, fail safe). A
+  documented MCP interface, when available, replaces the transport only.

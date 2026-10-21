@@ -97,3 +97,32 @@ client/app names, identity strings, and secret patterns. Actions:
 - finding.schema.json: a real finding slug from a past engagement
   replaced with a neutral example (xx-01-slug).
 - No secrets, keys, or client-identifying content found anywhere else.
+
+
+## 2026-10-21 — Milestones 3 (partial) + 4 (pack 0.3.0)
+
+### Test suite: 37/37 PASSED (was 21)
+
+New M3/M4 tests (tests/test_m3_m4.py, all offline):
+- store: create requires a schema-valid engagement (the bogus-activity
+  fixture is refused); evidence chain links + content dedupe; tamper,
+  row-removal and artifact corruption are each DETECTED; findings must
+  pass the schema; no-delete raises; duplicate marking + self-duplicate
+  refusal; persistence across store instances
+- report: confirmed-only sections, candidates in coverage-not-detail,
+  evidence trace present, refusal on a broken chain
+- normalizers: Nuclei dedupes repeated template matches and produces
+  schema-valid candidates; Semgrep slugifies check-ids (underscore bug
+  found and fixed by the test); scanner output is labeled never-confirmation
+- Caido: credential headers sanitized, exchange normalization pinned,
+  the draft client REFUSES unverified live use
+
+```
+37 passed in 0.54s   (Python 3.12.13, pytest 9.1.1, jsonschema)
+```
+
+### Known gaps (tracked, not hidden)
+
+- Caido live transport unverified (draft guard raises rather than
+  guessing) — needs a live instance round.
+- Garak/PyRIT, Obsidian bridge, report destinations: not started.

@@ -9,14 +9,14 @@
 id: halo-hacker
 namespace: hh
 name: Halo Hacker
-version: 0.2.0
+version: 0.3.0
 description: >-
   Authorized security assessment capability pack: specialized agent roles,
   assessment team lineups, structured playbooks, engagement scope policy,
   finding schemas, and evidence-driven reporting. Adds security assessment
   to Halo; owns no runtime, routing, or orchestration of its own.
 author: rolo (roloVibes)
-license: Proprietary (unreleased; distribution decision pending leakcheck gate)
+license: TBD (repo public 2026-10-21; license decision pending — all rights reserved until then)
 halo_api:
   # First Halo version with the pack registry (3.2.0.0 R1). The compat
   # adapter additionally supports 3.0.x-3.1.x manually -- see COMPATIBILITY.md.

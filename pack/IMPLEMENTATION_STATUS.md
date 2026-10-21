@@ -33,14 +33,37 @@
 - [x] skills/ content deferred to M3 alongside the ingestion bridge (the
       corpus is user data, not shippable methodology)
 
-## Milestone 3: Tool integrations — NOT STARTED (blocked items noted)
+## Milestone 3: Tool integrations — PARTIAL (0.3.0, 2026-10-21)
+
+- [x] Scanner-result normalizers (`tools/normalizers.py`): Nuclei -jsonl and
+      Semgrep --json output -> schema-valid CANDIDATE findings (deduped,
+      provenance-labeled "scanner output is a candidate, never confirmation")
+- [x] Caido adapter DRAFT (`tools/caido_adapter.py`): read-only client +
+      header sanitization + exchange normalization, fixture-pinned; live
+      transport deliberately refuses to run unverified (fail loud)
+- [x] Ingestion bridge: deferred to the Obsidian-knowledge integration
+      round (the engine is in this repo; the pack-side skill + MCP wiring
+      needs the engagement context layer first)
+- [ ] Obsidian knowledge retrieval (bridges `ingest/`), Garak/PyRIT
+      adapters, report destinations (PlexTrac/HackerOne/Jira) — next
 
 Caido adapter (prefer a documented MCP; custom adapter only for gaps),
 Nuclei/Semgrep result normalization, Garak/PyRIT, Obsidian knowledge
 (bridges to the existing halo-hacker ingestion engine — same repo, do not
 duplicate it), report destinations.
 
-## Milestone 4: Verification pipeline — NOT STARTED
+## Milestone 4: Verification pipeline — COMPLETE (0.3.0, 2026-10-21)
+
+- [x] `tools/findings_store.py`: the engagement-tree runtime — valid-
+      engagement gate, hash-chained evidence ledger with tamper/removal/
+      artifact-corruption detection, content-addressed artifacts with
+      natural dedupe, schema-gated finding upsert, duplicate marking,
+      NO DELETE VERB, persistence across store instances
+- [x] `tools/report.py`: report generation from CONFIRMED records only
+      (candidates listed in coverage but never detailed), evidence
+      reference on every finding, refusal on a broken evidence chain,
+      draft-only (human submits externally)
+- [x] 16 new offline tests pinning all of the above incl. tamper cases
 
 Validator/Judge runtime flow beyond bios; findings store on the
 engagement tree (schema shipped); duplicate detection; report generation.

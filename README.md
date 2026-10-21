@@ -298,4 +298,6 @@ Status, roadmap, and compatibility: `pack/IMPLEMENTATION_STATUS.md`,
 
 ## License
 
-Proprietary, unreleased. Distribution decision pending the leakcheck gate.
+The repository is public as of 2026-10-21 (leakcheck passed — see
+`pack/TEST_RESULTS.md`). No open-source license has been chosen yet; all
+rights reserved until one is.
