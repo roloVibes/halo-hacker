@@ -1,0 +1,31 @@
+playbook_id: discovery.session-handling
+version: "1.0"
+title: Session management testing
+category: web
+phase: discovery
+objective: >-
+  Assess session token generation, scoping, and invalidation (WSTG-SESS).
+methodology_refs: [OWASP WSTG-SESS-01, OWASP WSTG-SESS-06, OWASP WSTG-SESS-07]
+assigned_role: web
+prerequisites:
+  - {kind: test_accounts, detail: two approved accounts}
+  - {kind: traffic_capture, detail: login/session traffic}
+scope_requirements:
+  required_activities: [traffic-review, low-impact-validation]
+  target_kinds: [web, api]
+stages:
+  - name: token-analysis
+    description: Compare tokens across logins for predictability/scope leakage.
+    impact: read-only
+    expected_observations: [token structure, entropy assessment, claim scope]
+    evidence_requirements: [token samples, redacted]
+  - name: invalidation-probe
+    description: Reuse a logged-out token; expect rejection.
+    impact: low-impact
+    limits: {max_requests: 10}
+    expected_observations: [401/403 expected; acceptance is a candidate]
+    evidence_requirements: [sanitized request/response]
+completion_criteria:
+  - token lifecycle documented end to end
+finding_classification: owasp-wstg:sess
+judge_requirements: {required: true, independent_validation: true}

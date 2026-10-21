@@ -1,0 +1,40 @@
+playbook_id: discovery.llm-prompt-injection
+version: "1.0"
+title: Prompt injection testing (direct and indirect)
+category: ai
+phase: discovery
+objective: >-
+  Test the AI application's resistance to direct prompt injection and
+  indirect injection via retrieved/user-supplied content (OWASP LLM01),
+  in the approved test environment only.
+methodology_refs: [OWASP LLM01:2025]
+assigned_role: ai
+prerequisites:
+  - {kind: test_accounts, detail: approved test accounts on the target app}
+  - {kind: documentation, detail: documented system-prompt/tool architecture}
+  - {kind: documentation, detail: retrieval corpus description if RAG is in scope}
+scope_requirements:
+  required_activities: [low-impact-validation]
+  target_kinds: [ai]
+stages:
+  - name: architecture-review
+    description: Read documented controls and trust boundaries.
+    impact: read-only
+    expected_observations: [control list; injection-relevant boundaries]
+    evidence_requirements: [document version recorded]
+  - name: direct-injection-probe
+    description: Known canary injection payloads in user input.
+    impact: low-impact
+    limits: {max_requests: 40}
+    expected_observations: [refusal/deflection expected; instruction-following is a candidate]
+    evidence_requirements: [full sanitized transcript per probe]
+  - name: indirect-injection-probe
+    description: Canary payloads planted in content the system retrieves.
+    impact: low-impact
+    limits: {max_requests: 30}
+    expected_observations: [retrieved instructions ignored]
+    evidence_requirements: [transcript + planted-content reference]
+completion_criteria:
+  - every documented anti-injection control tested or classified untestable
+finding_classification: owasp-llm01:prompt-injection
+judge_requirements: {required: true, independent_validation: true}

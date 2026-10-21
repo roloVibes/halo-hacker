@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+# Local-only: drift checker against the owner's private vault (not published)
+scripts/check_drift.py

@@ -1,0 +1,31 @@
+playbook_id: recon.technology-id
+version: "1.0"
+title: Technology identification from provided data
+category: recon
+phase: reconnaissance
+objective: >-
+  Identify frameworks, servers, libraries, and versions from provided
+  traffic headers, error pages, and docs — with confidence levels, never
+  asserted as fact from a single hint.
+methodology_refs: [OWASP WSTG-INFO-02]
+assigned_role: recon
+prerequisites:
+  - {kind: traffic_capture, detail: provided HTTP history}
+  - {kind: inventory, detail: recon.asset-inventory output}
+scope_requirements:
+  required_activities: [read-only-analysis, traffic-review]
+stages:
+  - name: fingerprint-from-headers
+    description: Read response headers/bodies for technology markers.
+    impact: read-only
+    expected_observations: [technology candidates with confidence]
+    evidence_requirements: [header excerpt per identification]
+  - name: corroborate
+    description: Cross-check each candidate across multiple captures/docs.
+    impact: read-only
+    expected_observations: [corroborated vs single-source candidates split]
+    evidence_requirements: [corroboration sources listed]
+completion_criteria:
+  - every technology claim carries confidence + sources
+finding_classification: lead
+judge_requirements: {required: false, independent_validation: false}

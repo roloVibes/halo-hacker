@@ -1,0 +1,31 @@
+playbook_id: reporting.draft-from-confirmed
+version: "1.0"
+title: Draft report from confirmed findings
+category: reporting
+phase: reporting
+objective: >-
+  Generate the report from judge-confirmed finding records only: exec
+  summary, per-finding technical detail with evidence references,
+  remediation, methodology, and limitations. Generated, never hand-authored.
+methodology_refs: []
+assigned_role: reporter
+prerequisites:
+  - {kind: documentation, detail: confirmed finding set}
+  - {kind: documentation, detail: engagement metadata}
+scope_requirements:
+  required_activities: [read-only-analysis]
+stages:
+  - name: assemble
+    description: Generate sections from records; every claim carries its evidence ref.
+    impact: read-only
+    expected_observations: [complete draft]
+    evidence_requirements: [claim -> evidence trace table]
+  - name: coverage-check
+    description: Every confirmed finding present; candidates/rejected absent.
+    impact: read-only
+    expected_observations: [coverage table]
+    evidence_requirements: [finding-id checklist]
+completion_criteria:
+  - all confirmed findings covered; trace table complete; no hand-added claims
+finding_classification: n/a
+judge_requirements: {required: true, independent_validation: false}

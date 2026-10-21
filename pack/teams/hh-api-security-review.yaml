@@ -1,0 +1,35 @@
+# Halo Hacker pack -- API Security Review lineup.
+name: hh-api-security-review
+description: >-
+  API-focused review (OWASP API Top 10): spec/traffic-driven endpoint
+  inventory, object- and function-level authorization testing, then the
+  same validation/judge/report pipeline.
+version: 1
+tags: [halo-hacker, api, assessment]
+about: >-
+  API review leans on provided definitions and captured traffic; active
+  object-access tests use only approved test accounts and stay within the
+  engagement's rate limits.
+agents:
+  - {agent: hh-orchestrator, role: main, as: orchestrator}
+  - {agent: hh-recon, role: researcher, as: inventory}
+  - {agent: hh-api-tester, role: subagent, as: api}
+  - {agent: hh-validator, role: subagent, as: validate}
+  - {agent: hh-judge, role: judge, as: judge}
+  - {agent: hh-reporter, role: subagent, as: report}
+delegation:
+  mode: by-skill
+  max_parallel: 3
+  max_depth: 2
+  handoff: summary
+routing:
+  inventory: inventory
+  playbook-execution: api
+  validation: validate
+  review: judge
+  reporting: report
+  default: orchestrator
+budget:
+  max_budget_usd: 40
+permissions:
+  mode: auto

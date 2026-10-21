@@ -1,0 +1,33 @@
+playbook_id: discovery.input-handling
+version: "1.0"
+title: Input handling and injection review
+category: web
+phase: discovery
+objective: >-
+  Review input handling for injection classes (reflected/stored output
+  contexts, query construction) using provided traffic first and bounded,
+  non-destructive payloads second.
+methodology_refs: [OWASP WSTG-INPV-01, OWASP WSTG-INPV-02, OWASP WSTG-INPV-05]
+assigned_role: web
+prerequisites:
+  - {kind: inventory, detail: parameter inventory from endpoint discovery}
+  - {kind: traffic_capture, detail: representative request captures}
+scope_requirements:
+  required_activities: [traffic-review, low-impact-validation]
+  target_kinds: [web, api]
+stages:
+  - name: context-mapping
+    description: For each parameter, determine its output context.
+    impact: read-only
+    expected_observations: [parameter -> context map]
+    evidence_requirements: [capture reference per parameter]
+  - name: benign-payload-probe
+    description: Non-destructive canary payloads in each context class.
+    impact: low-impact
+    limits: {max_requests: 80}
+    expected_observations: [canary echoed unencoded is a candidate]
+    evidence_requirements: [request/response pair per payload]
+completion_criteria:
+  - every parameter class probed with a canary
+finding_classification: owasp-wstg:inpv
+judge_requirements: {required: true, independent_validation: true}

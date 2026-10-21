@@ -1,0 +1,10 @@
+{
+  "engagement_id": "bad-01",
+  "owner": "x",
+  "targets_file": "scope/targets.json",
+  "allowed_activities": [],
+  "window": { "start": "2026-10-21T09:00:00Z" },
+  "data_handling": {},
+  "reporting_destination": "nowhere",
+  "retention": {}
+}

@@ -1,0 +1,32 @@
+playbook_id: discovery.business-logic
+version: "1.0"
+title: Business logic review
+category: web
+phase: discovery
+objective: >-
+  Identify logic flaws: order-of-operations abuse, trust-boundary
+  assumptions, quantity/price manipulation — from documentation and
+  observed flows.
+methodology_refs: [OWASP WSTG-BUSL-01, OWASP WSTG-BUSL-02]
+assigned_role: web
+prerequisites:
+  - {kind: documentation, detail: business-flow documentation}
+  - {kind: inventory, detail: endpoint inventory}
+scope_requirements:
+  required_activities: [read-only-analysis, traffic-review]
+  target_kinds: [web, api]
+stages:
+  - name: flow-modeling
+    description: Model each business flow's intended state machine.
+    impact: read-only
+    expected_observations: [documented flows with states and guards]
+    evidence_requirements: [source per modeled flow]
+  - name: assumption-listing
+    description: List unstated trust assumptions worth a validation plan.
+    impact: read-only
+    expected_observations: [assumption list with risk notes]
+    evidence_requirements: [each assumption tied to observed behavior]
+completion_criteria:
+  - every core flow modeled; assumptions handed to validation planning
+finding_classification: owasp-wstg:busl
+judge_requirements: {required: true, independent_validation: false}

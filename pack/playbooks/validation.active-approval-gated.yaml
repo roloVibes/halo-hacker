@@ -1,0 +1,34 @@
+playbook_id: validation.active-approval-gated
+version: "1.0"
+title: Active validation (approval-gated)
+category: validation
+phase: validation
+objective: >-
+  Confirm a candidate that needs ACTIVE methods (state-changing or
+  higher-volume requests). Every stage below requires the engagement's
+  explicit human approval before dispatch; no exceptions, ever.
+methodology_refs: []
+assigned_role: validator
+prerequisites:
+  - {kind: documentation, detail: candidate finding + failed/absent low-impact repro}
+  - {kind: documentation, detail: engagement allows active-validation activity}
+scope_requirements:
+  required_activities: [active-validation]
+stages:
+  - name: bounded-validation-plan
+    description: Write the exact requests, volume, and blast radius.
+    impact: read-only
+    expected_observations: [a plan a human can approve in one read]
+    evidence_requirements: [plan stored; approval requested]
+    requires_approval: true
+  - name: execute-approved-plan
+    description: Run ONLY the approved steps, within the approved limits.
+    impact: active
+    requires_approval: true
+    limits: {max_requests: 30}
+    expected_observations: [expected vs observed]
+    evidence_requirements: [full sanitized evidence per step]
+completion_criteria:
+  - approved plan executed exactly; deviation aborts and reports
+finding_classification: n/a (validation record)
+judge_requirements: {required: true, independent_validation: false}

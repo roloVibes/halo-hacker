@@ -1,0 +1,31 @@
+# Halo Hacker pack -- Finding Validation and Reporting lineup.
+name: hh-finding-validation-reporting
+description: >-
+  The quality pipeline alone: re-validate existing candidates, judge
+  them, dedupe, and produce the draft report. Used standalone for
+  re-checks and report regeneration, or after an assessment team has run.
+version: 1
+tags: [halo-hacker, validation, reporting]
+about: >-
+  No testers in this lineup: candidates come in from prior work. The
+  validator reproduces independently; the judge gates and dedupes; the
+  reporter regenerates the report from confirmed records only.
+agents:
+  - {agent: hh-orchestrator, role: main, as: orchestrator}
+  - {agent: hh-validator, role: subagent, as: validate, instances: 2}
+  - {agent: hh-judge, role: judge, as: judge}
+  - {agent: hh-reporter, role: subagent, as: report}
+delegation:
+  mode: by-skill
+  max_parallel: 2
+  max_depth: 2
+  handoff: structured
+routing:
+  validation: validate
+  review: judge
+  reporting: report
+  default: orchestrator
+budget:
+  max_budget_usd: 25
+permissions:
+  mode: auto

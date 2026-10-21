@@ -1,0 +1,33 @@
+# Endpoint discovery from available data (traffic, specs) — never active probing.
+playbook_id: recon.endpoint-discovery
+version: "1.0"
+title: Endpoint discovery from provided data
+category: recon
+phase: reconnaissance
+objective: >-
+  Extract the endpoint surface (paths, methods, parameters, auth
+  requirements) from provided HTTP history, API definitions, and code —
+  not from active scanning.
+methodology_refs: [OWASP WSTG-INFO-02]
+assigned_role: recon
+prerequisites:
+  - {kind: inventory, detail: recon.asset-inventory output}
+  - {kind: traffic_capture, detail: "provided HTTP history (Caido export) OR"}
+  - {kind: api_spec, detail: OpenAPI/GraphQL schema}
+scope_requirements:
+  required_activities: [read-only-analysis, traffic-review]
+stages:
+  - name: extract-from-traffic
+    description: Walk captured requests; dedupe method+path+param shapes.
+    impact: read-only
+    expected_observations: [endpoint list with observed methods and auth headers]
+    evidence_requirements: [capture reference per endpoint]
+  - name: diff-against-spec
+    description: Compare observed endpoints against the API definition.
+    impact: read-only
+    expected_observations: [undocumented endpoints, spec'd-but-unobserved endpoints]
+    evidence_requirements: [spec version and diff output stored]
+completion_criteria:
+  - endpoint inventory with source per row; spec-vs-traffic diff produced
+finding_classification: lead (undocumented endpoints are discovery input)
+judge_requirements: {required: false, independent_validation: false}

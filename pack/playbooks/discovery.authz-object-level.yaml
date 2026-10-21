@@ -1,0 +1,32 @@
+playbook_id: discovery.authz-object-level
+version: "1.0"
+title: Object-level authorization testing
+category: api
+phase: discovery
+objective: >-
+  Detect broken object-level authorization: can approved test account A
+  read or modify objects it should not own (OWASP API1)?
+methodology_refs: [OWASP API1:2023, OWASP WSTG-ATHZ-02]
+assigned_role: api
+prerequisites:
+  - {kind: inventory, detail: recon.endpoint-discovery output}
+  - {kind: test_accounts, detail: "at least two accounts with different object ownership"}
+scope_requirements:
+  required_activities: [low-impact-validation]
+  target_kinds: [api]
+stages:
+  - name: map-object-ownership
+    description: For each object-bearing endpoint, note which account owns what.
+    impact: read-only
+    expected_observations: [ownership map per endpoint]
+    evidence_requirements: [account/object matrix recorded]
+  - name: cross-account-read-probe
+    description: Request account B's objects as account A, low volume.
+    impact: low-impact
+    limits: {max_requests: 50}
+    expected_observations: [403/404 expected; 200 with foreign data is a candidate]
+    evidence_requirements: [sanitized request/response pair per probe]
+completion_criteria:
+  - every object-bearing endpoint probed or classified untestable-with-reason
+finding_classification: owasp-api1:object-level-authz
+judge_requirements: {required: true, independent_validation: true}

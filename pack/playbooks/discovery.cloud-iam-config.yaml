@@ -1,0 +1,36 @@
+playbook_id: discovery.cloud-iam-config
+version: "1.0"
+title: Cloud IAM and configuration review
+category: cloud
+phase: discovery
+objective: >-
+  Review provided cloud configuration exports and IAM policies for
+  misconfiguration against the CSP's own configuration guide.
+methodology_refs: [CIS Benchmarks, CSP security configuration guides]
+assigned_role: recon
+prerequisites:
+  - {kind: documentation, detail: "provided config exports (IaC, console exports)"}
+  - {kind: documentation, detail: IAM policy documents}
+scope_requirements:
+  required_activities: [config-review]
+  target_kinds: [cloud]
+stages:
+  - name: inventory-configs
+    description: Parse provided exports; build the resource + policy inventory.
+    impact: read-only
+    expected_observations: [resource/policy inventory]
+    evidence_requirements: [source file hash per resource]
+  - name: benchmark-diff
+    description: Diff configs against the applicable benchmark items.
+    impact: read-only
+    expected_observations: [deviations with benchmark citations]
+    evidence_requirements: [benchmark version + deviation evidence]
+  - name: privilege-analysis
+    description: Trace effective permissions for each principal.
+    impact: read-only
+    expected_observations: [over-permissive principals flagged]
+    evidence_requirements: [policy-chain derivation shown]
+completion_criteria:
+  - every provided config reviewed against its benchmark
+finding_classification: cloud-config:deviation
+judge_requirements: {required: true, independent_validation: false}

@@ -1,0 +1,35 @@
+playbook_id: evidence.sanitize-and-store
+version: "1.0"
+title: Evidence sanitization and storage
+category: evidence
+phase: evidence
+objective: >-
+  Capture minimal supporting artifacts, sanitize them (credentials,
+  PII, client-identifying detail), and store them content-addressed
+  with ledger rows.
+methodology_refs: []
+assigned_role: validator
+prerequisites:
+  - {kind: documentation, detail: finding or validation record needing evidence}
+scope_requirements:
+  required_activities: [read-only-analysis]
+stages:
+  - name: collect
+    description: Capture the minimal artifact set for the claim.
+    impact: read-only
+    expected_observations: [request/response, screenshot, log, or transcript]
+    evidence_requirements: [raw artifact hashed]
+  - name: sanitize
+    description: Redact credentials/PII; verify nothing client-identifying remains.
+    impact: read-only
+    expected_observations: [sanitized artifact; redaction log]
+    evidence_requirements: [before/after hashes; redaction list]
+  - name: store
+    description: Content-addressed write + hash-chained ledger row.
+    impact: read-only
+    expected_observations: [artifact sha256 + ledger row with prev-hash]
+    evidence_requirements: [chain verification passes]
+completion_criteria:
+  - evidence references in the finding resolve and chain-verify
+finding_classification: n/a
+judge_requirements: {required: false, independent_validation: false}

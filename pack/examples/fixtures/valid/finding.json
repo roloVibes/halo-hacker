@@ -1,0 +1,30 @@
+{
+  "finding_id": "dl-01-object-level-authz",
+  "engagement_id": "demo-lab-01",
+  "target_ref": "vuln-app.test.lab:8080",
+  "title": "Object-level authorization missing on /api/notes/{id}",
+  "category": "owasp-api1:object-level-authz",
+  "playbook": { "id": "discovery.authz-object-level", "version": "1.0" },
+  "description": "Any authenticated user can read another user's note by id.",
+  "prerequisites": ["two standard-user accounts", "notes created by each"],
+  "expected_behavior": "Requesting another user's note returns 403 or 404.",
+  "observed_behavior": "Requesting another user's note returns 200 with its content.",
+  "reproduction": {
+    "steps": [
+      "Create note as alice, note id N.",
+      "Authenticated as bob, GET /api/notes/N.",
+      "Observe 200 with alice's note content."
+    ]
+  },
+  "evidence": [
+    { "ledger_ref": "demo-lab-01/evidence/ledger.jsonl#0007", "artifact_sha256": "0000000000000000000000000000000000000000000000000000000000000000", "kind": "request-response", "sanitized": true }
+  ],
+  "validation": { "status": "reproduced", "validator_ref": "hh-validator", "independent": true },
+  "reviewer_decision": { "decision": "confirmed", "rationale": "Reproduced independently from the record; evidence chain verifies.", "confidence": "high", "severity_rationale": "Cross-user data exposure with a single request.", "evidence_refs": ["0007"] },
+  "status": "confirmed",
+  "audit_history": [
+    { "timestamp": "2026-10-21T14:02:00Z", "actor": "hh-api-tester", "action": "candidate-created" },
+    { "timestamp": "2026-10-21T14:20:00Z", "actor": "hh-validator", "action": "reproduced" },
+    { "timestamp": "2026-10-21T14:35:00Z", "actor": "hh-judge", "action": "confirmed" }
+  ]
+}

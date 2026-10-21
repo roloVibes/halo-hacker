@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://rolovibes.example/halo-hacker/finding.schema.json",
+  "title": "Halo Hacker finding record",
+  "description": "A suspected or confirmed weakness. Status lifecycle: candidate -> needs_validation -> (confirmed | not_reproduced | duplicate | rejected | requires_human_review). An observation is never 'confirmed' because an agent asserted it: confirmation requires validator reproduction + judge decision. Attack paths are a projection over requires/grants, never a stored graph.",
+  "type": "object",
+  "required": ["finding_id", "engagement_id", "title", "category", "status", "description", "evidence", "audit_history"],
+  "additionalProperties": false,
+  "properties": {
+    "finding_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+-[0-9]{2,}-[a-z0-9-]+$",
+      "description": "Short prefix, zero-padded sequence, slug: xx-01-slug style (the engagement-tree lineage)."
+    },
+    "engagement_id": { "type": "string" },
+    "target_ref": { "type": "string" },
+    "title": { "type": "string", "minLength": 5 },
+    "category": {
+      "type": "string",
+      "description": "Playbook-defined classification (e.g. owasp-wstg:authz, owasp-api1:object-level, owasp-llm01:prompt-injection)."
+    },
+    "playbook": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": { "id": { "type": "string" }, "version": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "description": { "type": "string" },
+    "prerequisites": { "type": "array", "items": { "type": "string" } },
+    "expected_behavior": { "type": "string" },
+    "observed_behavior": { "type": "string" },
+    "reproduction": {
+      "type": "object",
+      "required": ["steps"],
+      "properties": {
+        "steps": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "scripts": { "type": "array", "items": { "type": "string" } },
+        "environment_notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["ledger_ref"],
+        "properties": {
+          "ledger_ref": { "type": "string", "description": "Hash-chained ledger row reference; must resolve and chain-verify." },
+          "artifact_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "kind": { "type": "string", "enum": ["request-response", "screenshot", "log", "transcript", "config", "note"] },
+          "sanitized": { "type": "boolean", "default": true }
+        },
+        "additionalProperties": false
+      }
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "enum": ["pending", "reproduced", "not_reproduced", "needs_more_info"] },
+        "validator_ref": { "type": "string" },
+        "independent": { "type": "boolean", "description": "True only when the validator did not share the tester's session/context." },
+        "record_ref": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "reviewer_decision": {
+      "type": "object",
+      "properties": {
+        "decision": { "type": "string", "enum": ["confirmed", "rejected", "needs_validation", "duplicate", "requires_human_review"] },
+        "rationale": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+        "severity_rationale": { "type": "string" },
+        "evidence_refs": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "duplicate_of": { "type": "string", "description": "finding_id this duplicates (judge-set)." },
+    "impact": { "type": "string" },
+    "remediation": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["candidate", "needs_validation", "confirmed", "not_reproduced", "duplicate", "rejected", "requires_human_review"]
+    },
+    "requires": { "type": "array", "items": { "type": "string" }, "description": "Capability tokens this finding required (for attack-path projection)." },
+    "grants": { "type": "array", "items": { "type": "string" }, "description": "Capability tokens exploiting this finding grants." },
+    "audit_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "actor", "action"],
+        "properties": {
+          "timestamp": { "type": "string", "format": "date-time" },
+          "actor": { "type": "string", "description": "Role or human." },
+          "action": { "type": "string" },
+          "detail": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

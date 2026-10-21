@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://rolovibes.example/halo-hacker/scope-targets.schema.json",
+  "title": "Halo Hacker scope targets (the wall)",
+  "description": "Declarative in-scope targets and exclusions. The broker regenerates the derived allowlist from this file in the SAME function that reads it (flag-and-derived-guard-move-together rule) and checks resolved addresses at exec time, not config-parse time. Exclusions outrank inclusions.",
+  "type": "object",
+  "required": ["schema_version", "includes", "exclusions"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "includes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/target" }
+    },
+    "exclusions": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/target" },
+      "description": "Out-of-bounds hosts (e.g. shared infrastructure) -- denied even when inside an included CIDR."
+    }
+  },
+  "definitions": {
+    "target": {
+      "type": "object",
+      "oneOf": [
+        { "required": ["hostname"] },
+        { "required": ["cidr"] },
+        { "required": ["ip_range"] }
+      ],
+      "properties": {
+        "hostname": { "type": "string" },
+        "cidr": { "type": "string" },
+        "ip_range": {
+          "type": "object",
+          "required": ["from", "to"],
+          "properties": { "from": { "type": "string" }, "to": { "type": "string" } },
+          "additionalProperties": false
+        },
+        "port_ranges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "to"],
+            "properties": { "from": { "type": "integer" }, "to": { "type": "integer" } },
+            "additionalProperties": false
+          }
+        },
+        "labels": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

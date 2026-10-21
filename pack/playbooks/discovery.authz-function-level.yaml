@@ -1,0 +1,32 @@
+playbook_id: discovery.authz-function-level
+version: "1.0"
+title: Function-level authorization testing
+category: api
+phase: discovery
+objective: >-
+  Detect endpoints a lower-privilege account can reach that are meant for
+  higher privileges (OWASP API5).
+methodology_refs: [OWASP API5:2023, OWASP WSTG-ATHZ-04]
+assigned_role: api
+prerequisites:
+  - {kind: inventory, detail: endpoint inventory with documented roles}
+  - {kind: test_accounts, detail: accounts at distinct privilege levels}
+scope_requirements:
+  required_activities: [low-impact-validation]
+  target_kinds: [api, web]
+stages:
+  - name: enumerate-privileged-surface
+    description: List endpoints documented or observed as privileged.
+    impact: read-only
+    expected_observations: [privileged endpoint list]
+    evidence_requirements: [source of the privilege assumption]
+  - name: low-privilege-probe
+    description: Reach each privileged endpoint with the low-privilege account.
+    impact: low-impact
+    limits: {max_requests: 60}
+    expected_observations: [403 expected; anything else is a candidate]
+    evidence_requirements: [sanitized request/response per probe]
+completion_criteria:
+  - privileged surface fully probed from the lowest privilege account
+finding_classification: owasp-api5:function-level-authz
+judge_requirements: {required: true, independent_validation: true}

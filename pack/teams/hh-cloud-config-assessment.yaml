@@ -1,0 +1,35 @@
+# Halo Hacker pack -- Cloud Configuration Assessment lineup.
+name: hh-cloud-config-assessment
+description: >-
+  Configuration review for cloud estates (CSP config guides aligned):
+  inventory of provided configs and IAM policy, misconfiguration review,
+  validation against documented behavior, then the report pipeline.
+version: 1
+tags: [halo-hacker, cloud, assessment]
+about: >-
+  Read-heavy: works from provided configuration exports, IAM policies,
+  and architecture docs. No live cloud API calls unless a playbook stage
+  explicitly authorizes a read-only check with brokered credentials.
+agents:
+  - {agent: hh-orchestrator, role: main, as: orchestrator}
+  - {agent: hh-recon, role: researcher, as: inventory}
+  - {agent: hh-web-tester, role: subagent, as: review, use_for: [config-review]}
+  - {agent: hh-validator, role: subagent, as: validate}
+  - {agent: hh-judge, role: judge, as: judge}
+  - {agent: hh-reporter, role: subagent, as: report}
+delegation:
+  mode: by-skill
+  max_parallel: 3
+  max_depth: 2
+  handoff: summary
+routing:
+  inventory: inventory
+  config-review: review
+  validation: validate
+  review: judge
+  reporting: report
+  default: orchestrator
+budget:
+  max_budget_usd: 30
+permissions:
+  mode: auto

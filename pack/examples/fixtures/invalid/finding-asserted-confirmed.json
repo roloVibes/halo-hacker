@@ -1,0 +1,10 @@
+{
+  "finding_id": "bad-03-asserted",
+  "engagement_id": "demo-lab-01",
+  "title": "A tester said so",
+  "category": "misc",
+  "status": "confirmed",
+  "description": "Agent asserted this without validation or judge review.",
+  "evidence": [],
+  "audit_history": []
+}

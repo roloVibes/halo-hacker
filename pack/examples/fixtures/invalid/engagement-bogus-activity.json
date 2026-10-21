@@ -1,0 +1,11 @@
+{
+  "engagement_id": "bad-02",
+  "owner": "x",
+  "authorization": { "record_reference": "r", "signed_by": "s" },
+  "targets_file": "scope/targets.json",
+  "allowed_activities": ["unrestricted-testing"],
+  "window": { "start": "2026-10-21T09:00:00Z", "expires": "2026-11-04T18:00:00Z" },
+  "data_handling": { "locality": "on-box-only" },
+  "reporting_destination": "nowhere",
+  "retention": { "audit_retention_days": 90 }
+}

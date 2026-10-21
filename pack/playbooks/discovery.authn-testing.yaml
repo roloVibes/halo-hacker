@@ -1,0 +1,33 @@
+playbook_id: discovery.authn-testing
+version: "1.0"
+title: Authentication mechanism testing
+category: web
+phase: discovery
+objective: >-
+  Assess the authentication mechanism from provided behavior and
+  low-impact checks: credential handling, session issuance, lockout,
+  recovery flows.
+methodology_refs: [OWASP WSTG-ATHN-*]
+assigned_role: web
+prerequisites:
+  - {kind: test_accounts, detail: approved test credentials}
+  - {kind: documentation, detail: auth flow documentation if available}
+scope_requirements:
+  required_activities: [traffic-review, low-impact-validation]
+  target_kinds: [web, api]
+stages:
+  - name: review-auth-flows
+    description: Read captured login/logout/recovery traffic.
+    impact: read-only
+    expected_observations: [token types, transport, expiry, recovery behavior]
+    evidence_requirements: [sanitized capture excerpts]
+  - name: lockout-and-limits-probe
+    description: Bounded failed-login attempts to observe lockout.
+    impact: low-impact
+    limits: {max_requests: 20}
+    expected_observations: [lockout or rate-limit response]
+    evidence_requirements: [response per attempt, sanitized]
+completion_criteria:
+  - each auth flow documented; lockout behavior observed or noted absent
+finding_classification: owasp-wstg:authn
+judge_requirements: {required: true, independent_validation: true}

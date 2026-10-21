@@ -1,0 +1,33 @@
+# Build the authorized asset inventory from PROVIDED data only.
+playbook_id: recon.asset-inventory
+version: "1.0"
+title: Authorized asset inventory
+category: recon
+phase: reconnaissance
+objective: >-
+  Catalog every in-scope asset (hosts, apps, endpoints, identities) from
+  the engagement's provided materials, proving coverage of the declared
+  scope without sending a packet.
+methodology_refs: [OWASP WSTG-INFO-01, OWASP WSTG-INFO-03]
+assigned_role: recon
+prerequisites:
+  - {kind: documentation, detail: engagement targets file (scope-targets schema)}
+  - {kind: documentation, detail: client-provided asset list or architecture docs}
+scope_requirements:
+  required_activities: [read-only-analysis]
+stages:
+  - name: parse-declared-scope
+    description: Read targets.json; enumerate every include/exclude entry.
+    impact: read-only
+    expected_observations: [declared targets and exclusions enumerated]
+    evidence_requirements: [targets file hash recorded in the ledger]
+  - name: map-provided-materials
+    description: Match provided docs/captures against declared targets.
+    impact: read-only
+    expected_observations: [assets with sources; gaps named]
+    evidence_requirements: [source citation per asset]
+completion_criteria:
+  - every declared target represented, or the data gap named explicitly
+  - inventory handed to the orchestrator with coverage notes
+finding_classification: n/a (inventory output, not findings)
+judge_requirements: {required: false, independent_validation: false}

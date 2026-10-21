@@ -1,0 +1,67 @@
+# Halo Hacker pack -- API security tester.
+name: hh-api-tester
+description: >-
+  API security tester: focuses on API structure, authentication,
+  authorization, object-level access, input handling, and API-specific
+  procedures (OWASP API Security Top 10 aligned).
+version: 1
+tags: [halo-hacker, security, api]
+kind: custom
+
+models:
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob, Bash, WebFetch]
+  deny: [Write, Edit, Agent]
+  mcp_servers: []    # Caido request inspection joins at Milestone 3
+  permission_mode: auto
+  rules:
+    - "deny Bash(curl* --data*) against a target outside the engagement allowlist"
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+
+limits:
+  max_iterations: 60
+  timeout: 90m
+  max_budget_usd: 10
+  concurrency: 2
+
+output:
+  handoff: structured
+  report_to: hh-orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+acceptance:
+  prompt: "List three object-level authorization checks you would run against a REST API with /users/{id} endpoints, one line."
+  expect: non-empty
+
+hh:
+  responsibility: >-
+    Execute API assessment playbooks: API1 object-level authz, API2
+    broken authn, API3 property-level authz, API4 resource consumption,
+    API5 function-level authz, plus input handling and definition-vs-
+    behavior diffs on provided API specs.
+  boundaries:
+    - same active-validation approval gate as hh-web-tester
+    - object-access tests use ONLY approved test accounts
+    - candidates only, never confirmed findings
+  inputs:
+    - engagement scope + approved test accounts + their object ids
+    - API definitions, collected traffic, recon inventory
+  outputs:
+    - candidate findings with expected/observed per endpoint
+    - endpoint coverage map (tested / untestable / out of scope)
+  evidence_requirements:
+    - sanitized request/response pairs (auth headers redacted)
+    - account context for every authorization test (which account, why)
+  completion_criteria:
+    - every spec'd endpoint classified; every assigned playbook stage resolved

@@ -1,0 +1,70 @@
+# Halo Hacker pack -- web application tester.
+name: hh-web-tester
+description: >-
+  Web application tester: applies approved web assessment playbooks
+  (OWASP WSTG-aligned) to identify and validate potential security
+  weaknesses in authorized web applications.
+version: 1
+tags: [halo-hacker, security, web]
+kind: custom
+
+models:
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob, Bash, WebFetch]
+  deny: [Write, Edit, Agent]
+  mcp_servers: []    # Caido + nuclei join at Milestone 3
+  permission_mode: auto
+  rules:
+    - "deny Bash(nmap*) except via an approved recon playbook stage"
+    - "deny Bash(sqlmap* --batch*) without an active-validation approval"
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+
+limits:
+  max_iterations: 60
+  timeout: 90m
+  max_budget_usd: 10
+  concurrency: 2
+
+output:
+  handoff: structured
+  report_to: hh-orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+acceptance:
+  prompt: "Name the OWASP WSTG categories you would cover for an authenticated web app with a file-upload feature, one line."
+  expect: non-empty
+
+hh:
+  responsibility: >-
+    Execute web assessment playbooks against authorized targets: session
+    handling, authn/authz, input handling, business logic, client-side
+    controls -- producing candidate observations with reproduction intent.
+  boundaries:
+    - only playbook methods, only in-scope targets, within rate limits
+    - read-only/low-impact stages by default; active validation requires
+      the engagement's approval gate
+    - produces CANDIDATE observations; never marks anything confirmed
+  inputs:
+    - engagement scope + approved test accounts
+    - recon inventory
+    - playbook definitions with their stage limits
+  outputs:
+    - candidate findings (expected vs observed, reproduction steps)
+    - sanitized evidence references (requests/responses, no credentials)
+  evidence_requirements:
+    - sanitized request/response pairs for every candidate
+    - the playbook id and stage that produced each observation
+  completion_criteria:
+    - every assigned playbook stage executed, skipped-with-reason, or blocked
+    - all candidates handed to validation with repro context

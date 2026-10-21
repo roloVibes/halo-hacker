@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://rolovibes.example/halo-hacker/playbook.schema.json",
+  "title": "Halo Hacker playbook",
+  "description": "Structured, versioned testing workflow. Model-independent: a playbook never names a model or provider. Stages are ordered; each declares its own impact class and approval needs. Read-only and low-impact first; active stages require the engagement's approval gate.",
+  "type": "object",
+  "required": ["playbook_id", "version", "category", "objective", "phase", "assigned_role", "prerequisites", "scope_requirements", "stages", "completion_criteria", "finding_classification"],
+  "additionalProperties": false,
+  "properties": {
+    "playbook_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "title": { "type": "string" },
+    "category": { "type": "string", "description": "e.g. recon, discovery, validation, evidence, reporting, api, ai, cloud" },
+    "phase": { "type": "string", "enum": ["reconnaissance", "discovery", "validation", "evidence", "reporting"] },
+    "objective": { "type": "string" },
+    "methodology_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "e.g. OWASP WSTG-ATHZ-02, OWASP API1:2023, OWASP LLM01:2025, CIS benchmark sections."
+    },
+    "prerequisites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": { "type": "string", "enum": ["inventory", "api_spec", "traffic_capture", "test_accounts", "documentation", "tool"] },
+          "detail": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "scope_requirements": {
+      "type": "object",
+      "properties": {
+        "required_activities": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["read-only-analysis", "traffic-review", "code-review", "config-review", "low-impact-validation", "active-validation", "disruptive-testing"] }
+        },
+        "target_kinds": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "assigned_role": { "type": "string", "enum": ["recon", "web", "api", "ai", "validator", "judge", "reporter", "orchestrator"] },
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "impact"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "impact": { "type": "string", "enum": ["read-only", "low-impact", "active", "disruptive"] },
+          "requires_approval": { "type": "boolean", "default": false },
+          "expected_observations": { "type": "array", "items": { "type": "string" } },
+          "evidence_requirements": { "type": "array", "items": { "type": "string" } },
+          "limits": {
+            "type": "object",
+            "properties": {
+              "max_requests": { "type": "integer", "minimum": 1 },
+              "timeout": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "resource_limits": {
+      "type": "object",
+      "properties": {
+        "max_budget_usd": { "type": "number", "minimum": 0 },
+        "max_duration": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "completion_criteria": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "finding_classification": { "type": "string" },
+    "judge_requirements": {
+      "type": "object",
+      "properties": {
+        "required": { "type": "boolean", "default": true },
+        "independent_validation": { "type": "boolean", "default": true }
+      },
+      "additionalProperties": false
+    }
+  }
+}

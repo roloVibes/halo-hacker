@@ -1,0 +1,31 @@
+playbook_id: validation.low-impact-repro
+version: "1.0"
+title: Independent low-impact reproduction
+category: validation
+phase: validation
+objective: >-
+  Independently reproduce a candidate finding's behavior from its record
+  alone, with controlled evidence capture.
+methodology_refs: []
+assigned_role: validator
+prerequisites:
+  - {kind: documentation, detail: candidate finding record with repro steps}
+  - {kind: test_accounts, detail: the accounts the candidate used}
+scope_requirements:
+  required_activities: [low-impact-validation]
+stages:
+  - name: read-candidate-only
+    description: Load the candidate record; do NOT load the tester's session.
+    impact: read-only
+    expected_observations: [reproduction plan from the record alone]
+    evidence_requirements: [plan recorded before execution]
+  - name: reproduce
+    description: Execute the recorded steps exactly, within limits.
+    impact: low-impact
+    limits: {max_requests: 20}
+    expected_observations: [expected vs observed behavior]
+    evidence_requirements: [sanitized request/response, timestamps]
+completion_criteria:
+  - "outcome emitted: reproduced / not-reproduced / needs-more-info, with evidence"
+finding_classification: n/a (validation record)
+judge_requirements: {required: false, independent_validation: false}

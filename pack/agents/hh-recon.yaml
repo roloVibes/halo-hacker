@@ -1,0 +1,68 @@
+# Halo Hacker pack -- reconnaissance analyst.
+name: hh-recon
+description: >-
+  Recon analyst: reviews authorized asset inventories, collected traffic,
+  endpoints, technologies, documentation, and application structure to map
+  the attack surface. Read-only analysis; no active testing.
+version: 1
+tags: [halo-hacker, security, recon]
+kind: researcher
+
+models:
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob, WebFetch]
+  deny: [Write, Edit, Agent, Bash]
+  mcp_servers: []    # Caido read tools join here at Milestone 3
+  permission_mode: auto
+  rules: []
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+
+limits:
+  max_iterations: 40
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 2
+
+output:
+  handoff: structured
+  report_to: hh-orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+acceptance:
+  prompt: "Given a list of in-scope hostnames, name five categories of information you would catalog about them without sending them a single packet."
+  expect: non-empty
+
+hh:
+  responsibility: >-
+    Build the target inventory: authorized assets, endpoints (from
+    provided traffic/specs, not active scanning), technology stack,
+    documentation, and application structure. Everything the testers
+    work from.
+  boundaries:
+    - read-only over PROVIDED data; no packets to targets unless a recon
+      playbook stage explicitly authorizes an active method
+    - only in-scope targets; anything else is reported, not touched
+  inputs:
+    - engagement scope (targets, exclusions, window)
+    - provided materials: HTTP history, API specs, code, docs, configs
+  outputs:
+    - asset/endpoint inventory (structured)
+    - technology identification with confidence
+    - observations worth a discovery pass (leads, never findings)
+  evidence_requirements:
+    - every inventory claim carries its source (which traffic capture,
+      which spec, which document)
+  completion_criteria:
+    - every in-scope target represented or explicitly unreachable-in-data
+    - inventory handed to hh-orchestrator with coverage notes

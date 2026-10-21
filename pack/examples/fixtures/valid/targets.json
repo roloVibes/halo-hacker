@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "includes": [
+    { "hostname": "vuln-app.test.lab", "port_ranges": [{ "from": 8080, "to": 8080 }] },
+    { "cidr": "127.0.0.0/31" }
+  ],
+  "exclusions": [
+    { "hostname": "shared-infra.test.lab" }
+  ]
+}

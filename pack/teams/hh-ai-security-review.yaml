@@ -1,0 +1,36 @@
+# Halo Hacker pack -- AI Application Security Review lineup.
+name: hh-ai-security-review
+description: >-
+  AI application review (OWASP LLM Top 10): documented-control
+  validation, prompt injection (direct + indirect), tool boundaries,
+  retrieval handling, output controls -- in approved test environments.
+version: 1
+tags: [halo-hacker, ai, assessment]
+about: >-
+  The AI tester runs at effort high and concurrency 1; model refusals are
+  recorded as outcomes and never rerouted to a less restrictive provider.
+  Validation independence matters most here: the validator re-runs the
+  payloads without the tester's narrative.
+agents:
+  - {agent: hh-orchestrator, role: main, as: orchestrator}
+  - {agent: hh-recon, role: researcher, as: inventory}
+  - {agent: hh-ai-security-tester, role: subagent, as: ai}
+  - {agent: hh-validator, role: subagent, as: validate}
+  - {agent: hh-judge, role: judge, as: judge}
+  - {agent: hh-reporter, role: subagent, as: report}
+delegation:
+  mode: by-skill
+  max_parallel: 2
+  max_depth: 2
+  handoff: summary
+routing:
+  inventory: inventory
+  playbook-execution: ai
+  validation: validate
+  review: judge
+  reporting: report
+  default: orchestrator
+budget:
+  max_budget_usd: 40
+permissions:
+  mode: auto

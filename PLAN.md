@@ -1,6 +1,6 @@
 # halo-hacker — the distributable offensive-security agent
 
-> Created 2026-10-04. **Supersedes vibes-hacker** (`/Users/rolo/Documents/obsidian/vibe-agent/` —
+> Created 2026-10-04. **Supersedes vibes-hacker** (`(private, unpublished)` —
 > abandoned as a project the same day; repo stays on disk, still never pushed; its proven assets are
 > already accounted for in the halo-harness asset map). Pairs with
 > [halo-harness-cyber](../halo-harness-cyber/PLAN.md).
@@ -10,7 +10,7 @@
 | Thing | What it is | Distributed? |
 |---|---|---|
 | **halo** | the chassis — harness machinery: model lanes, governor, containment, delegation, filter handling | separately (it's the harness itself) |
-| **serverMode** | rolo's live private org — engagements, real client data, wired machines | **never** |
+| **serverMode** | the owner's live private org — engagements, real client data, wired machines | **never** |
 | **halo-hacker** | the product — the offensive-security agent + methodology + ingestion engine a user installs into their own halo | **this project** |
 
 halo-hacker is what vibes-hacker was trying to be ("the offensive org you install into your halo"),
@@ -31,8 +31,8 @@ skills, checklist ledgers, expected-output contracts, governor priorities, human
 methodology they operate under). A coding swarm and a pentest swarm use identical chassis
 machinery — the difference is entirely the org definition riding on it. Consequences:
 
-1. **For rolo, the pilot is serverMode** (the live org). halo-hacker is the distributable form
-   of the same pilot — rolo doesn't run halo-hacker himself.
+1. **For the owner, the pilot is serverMode** (the live org). halo-hacker is the distributable form
+   of the same pilot — the owner doesn't run halo-hacker himself.
 2. **Swarm SAFETY is harness-enforced; swarm DOCTRINE is pilot-declared.** The position carries
    the human-gate flag; chassis containment is what actually halts execution and waits for
    approval. Doctrine never relies on the model's good behavior (the brood RCE lesson).
@@ -61,7 +61,7 @@ do not copy-and-drift: if the schema changes there, it changes here.
 - RoE / authorization gates.
 
 **OUT (stays in serverMode, never ships):**
-- rolo's findings, PoCs, engagement data.
+- the owner's findings, PoCs, engagement data.
 - Client-derived lessons until scrubbed.
 - The populated KB. **A leakcheck gate runs before anything is published** — client-identifying
   detail is the risk even in "technique" notes (a lesson written from a live engagement can name
@@ -165,6 +165,32 @@ mistake, and it's on the What-NOT-to-do list of both plans.
 4. Methodology docs + empty-vault scaffold (the shippable skeleton) — position schema lifted
    verbatim from halo-harness-cyber (see the boundary-rule section above).
 5. Leakcheck publish gate + scrub pass over anything methodological that derives from live work.
+
+## Status — pack Milestone 1 COMPLETE (2026-10-21)
+
+**The Halo Hacker capability pack** (the security-assessment extension to
+Halo Harness, spec applied 2026-10-21; ADDS to this project, ingestion
+engine untouched) lives at `pack/`:
+
+- `pack/pack.yaml` — manifest per the Halo 3.2.0.0 R1 Packs contract
+  (roadmap added upstream 2026-10-21; registry not yet implemented —
+  see `pack/CORE_REQUESTS.md`)
+- `pack/agents/` — 8 role bios in the REAL Halo bio grammar (verified:
+  they pass `halo_harness/agents_yaml.py`'s own validator against master
+  @ 90cd137), security role contract under a namespaced `hh:` block the
+  loader round-trips untouched
+- `pack/teams/` — 5 lineups (web, api, ai, cloud, validation+reporting)
+- `pack/schemas/` — engagement / scope-targets / finding / playbook
+  JSON Schemas (lifted from halo-harness-cyber/ENGAGEMENT-MODEL.md)
+- `pack/scripts/install-compat.sh` — pre-3.2.0.0 adapter: installs
+  bios/teams into `~/.halo/agents|teams/` (stable, documented surface;
+  no core patches). Proven end-to-end in a sandbox HOME.
+- `pack/tests/` — 14/14 green incl. the real-harness validator pin;
+  validator exit-code gated. Details: `pack/TEST_RESULTS.md`
+- Tracking: `pack/{CORE_REQUESTS,COMPATIBILITY,IMPLEMENTATION_STATUS,PLAYBOOK_CATALOG,INTEGRATION_STATUS,TEST_RESULTS}.md`
+
+Next: Milestone 2 (playbooks + controlled fixtures) per
+`pack/IMPLEMENTATION_STATUS.md`.
 
 ## Status — v0.1 (2026-10-04)
 
