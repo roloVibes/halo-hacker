@@ -36,7 +36,9 @@ def doc(text, ref="note.md", tier="first-party"):
 
 CYBER = "Enumerated the API; found stored XSS in the jwt handling; nmap sweep clean."
 NOT_CYBER = "Grocery list: eggs, flour, milk. Also the paint samples for the hallway."
-PERSONAL = "My password hint is our anniversary date. Anyway, the sqli payload was '."
+PERSONAL_SECRET = "My password = Hunter2secret! is stored here. Anyway, the sqli payload was '."
+LIFE_NOTE = "Remember the anniversary dinner and the grocery run for mom."
+TECHNICAL_WITH_LIFE_WORD = "After the pivot, resume the exploit chain against the doctor portal endpoint."
 
 # ------------------------------------------------------------------ privacy filter
 
@@ -46,9 +48,46 @@ def test_filter_proves_it_dropped():
     assert dropped[0]["reason"] == "no-cyber-signal"
 
 
-def test_personal_signal_excluded_even_when_cyber():
-    kept, dropped = pipeline.privacy_filter([doc(PERSONAL)])
-    assert kept == [] and dropped[0]["reason"] == "personal-signal"
+def test_sensitive_data_excluded_even_when_cyber():
+    # 2026-10-21 review: a security note containing a real secret must be
+    # dropped DESPITE its cyber relevance.
+    kept, dropped = pipeline.privacy_filter([doc(PERSONAL_SECRET)])
+    assert kept == []
+    assert dropped[0]["reason"].startswith("sensitive-data:")
+    assert "credential-assignment" in dropped[0]["reason"]
+
+
+def test_life_word_no_longer_discards_a_relevant_note():
+    # 2026-10-21 review: "resume"/"doctor" alone must not kill a technical
+    # note (the old keyword classifier did exactly this).
+    kept, dropped = pipeline.privacy_filter([doc(TECHNICAL_WITH_LIFE_WORD)])
+    assert len(kept) == 1 and dropped == []
+
+
+def test_irrelevant_life_note_dropped_with_reason():
+    kept, dropped = pipeline.privacy_filter([doc(LIFE_NOTE)])
+    assert kept == [] and dropped[0]["reason"] == "personal-life"
+
+
+def test_structured_secrets_each_detected():
+    for content, rule in [
+        ("-----BEGIN RSA PRIVATE KEY-----\nabc\n-----END RSA PRIVATE KEY-----", "private-key"),
+        ("the form needs ssn 123-45-6789 today", "ssn-shaped"),
+        ("card 4111 1111 1111 1111 on file", "card-shaped"),
+        ("the key sk-abcdefghijklmnopqrstuvwx is dead", "api-key"),
+        ("aws AKIAIOSFODNN7EXAMPLE leaked", "aws-key"),
+        ("pat ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkl is rotated", "github-pat"),
+        ("contact admin@example.com for access", "email"),
+    ]:
+        hits = pipeline.find_sensitive(content)
+        assert rule in hits, f"{rule} not detected in {content[:40]!r} (got {hits})"
+
+
+def test_first_party_clean_note_kept_as_owned_source():
+    # kept = owned SOURCE (trust tier recorded by the store), never
+    # automatically authoritative as a technical conclusion.
+    kept, _ = pipeline.privacy_filter([doc(CYBER, tier="first-party")])
+    assert kept and kept[0]["trust_tier"] == "first-party"
 
 
 def test_empty_filter_reports_not_silently_passes(tmp_path):

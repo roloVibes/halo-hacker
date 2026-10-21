@@ -80,7 +80,7 @@
     "remediation": { "type": "string" },
     "status": {
       "type": "string",
-      "enum": ["candidate", "needs_validation", "confirmed", "not_reproduced", "duplicate", "rejected", "requires_human_review"]
+      "enum": ["candidate", "needs_validation", "confirmed", "not_reproduced", "duplicate", "rejected", "requires_human_review", "withdrawn"]
     },
     "requires": { "type": "array", "items": { "type": "string" }, "description": "Capability tokens this finding required (for attack-path projection)." },
     "grants": { "type": "array", "items": { "type": "string" }, "description": "Capability tokens exploiting this finding grants." },
@@ -98,5 +98,29 @@
         "additionalProperties": false
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "confirmed" } } },
+      "then": {
+        "required": ["validation", "reviewer_decision"],
+        "properties": {
+          "validation": {
+            "required": ["status", "independent"],
+            "properties": {
+              "status": { "const": "reproduced" },
+              "independent": { "const": true }
+            }
+          },
+          "reviewer_decision": {
+            "required": ["decision", "rationale", "evidence_refs"],
+            "properties": {
+              "decision": { "const": "confirmed" }
+            }
+          }
+        }
+      },
+      "description": "P0 hardening (2026-10-21 review): 'confirmed' is structurally impossible without an INDEPENDENT reproduced validation and a judge decision citing evidence. No amount of agent assertion satisfies it."
+    }
+  ]
 }

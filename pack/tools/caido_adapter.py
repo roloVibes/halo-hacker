@@ -27,38 +27,100 @@ REDACT_HEADERS = {"authorization", "cookie", "set-cookie", "x-api-key",
                   "proxy-authorization", "x-csrf-token"}
 
 
-def sanitize_headers(headers: dict) -> dict:
-    """Credential-bearing headers never enter evidence as-is."""
-    out = {}
+def sanitize_headers(headers: dict) -> "tuple[dict, list[str]]":
+    """Credential-bearing headers never enter evidence as-is.
+    Returns (sanitized_headers, rules_fired)."""
+    out, fired = {}, []
     for k, v in (headers or {}).items():
-        out[k] = "[REDACTED]" if k.lower() in REDACT_HEADERS else v
-    return out
+        if k.lower() in REDACT_HEADERS:
+            out[k] = "[REDACTED]"
+            fired.append(f"header:{k.lower()}")
+        else:
+            out[k] = v
+    return out, fired
 
 
-def normalize_exchange(exchange: dict) -> dict:
+# Structured body redaction (2026-10-21 review: bodies carry tokens, PII,
+# passwords and session secrets — header redaction alone is not
+# "sanitized"). Each rule is (name, compiled_regex, replacement). The
+# default set is conservative; users extend it via SanitizationPolicy.
+import re as _re
+
+DEFAULT_BODY_RULES: "list[tuple[str, _re.Pattern, str]]" = [
+    ("bearer-token", _re.compile(r"(?i)bearer\s+[a-z0-9._~+/-]+=*"), "[REDACTED-BEARER]"),
+    ("jwt", _re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}"), "[REDACTED-JWT]"),
+    ("credential", _re.compile(r"(?i)(api[_-]?key|token|secret|password|passwd)['\"]?\s*[:=]\s*['\"]?[^\s'\",}]{8,}"), "[REDACTED-SECRET]"),
+    ("openai-key", _re.compile(r"sk-[A-Za-z0-9_-]{20,}"), "[REDACTED-KEY]"),
+    ("private-key-block", _re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----"), "[REDACTED-PRIVATE-KEY]"),
+    ("credit-card", _re.compile(r"\b(?:\d[ -]?){13,16}\b"), "[REDACTED-PAN]"),
+    ("ssn", _re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[REDACTED-SSN]"),
+]
+
+
+class SanitizationPolicy:
+    """Configurable redaction rules for exchange bodies. extend() adds
+    rules; a malformed rule raises at construction (fail loud, fail safe)."""
+
+    def __init__(self, rules=None, max_body_chars: int = 2000):
+        self.rules = list(rules) if rules is not None else list(DEFAULT_BODY_RULES)
+        self.max_body_chars = max_body_chars
+        for name, pat, _ in self.rules:
+            if not isinstance(pat, _re.Pattern):
+                raise CaidoUnavailable(f"body rule {name!r} is not a compiled pattern")
+
+    def extend(self, name: str, pattern: str, replacement: str) -> "SanitizationPolicy":
+        self.rules.append((name, _re.compile(pattern), replacement))
+        return self
+
+    def sanitize_body(self, body: str) -> "tuple[str, list[str]]":
+        """Apply every rule; returns (sanitized, rules_fired)."""
+        text = body or ""
+        fired = []
+        for name, pat, repl in self.rules:
+            new, n = pat.subn(repl, text)
+            if n:
+                fired.append(name)
+            text = new
+        return text[: self.max_body_chars], fired
+
+
+def normalize_exchange(exchange: dict,
+                       policy: "SanitizationPolicy | None" = None) -> dict:
     """A Caido interception (request+response) -> sanitized observation.
 
     Expected input shape (fixture-pinned; verify against live API):
       {"id": "...", "request": {"method", "path", "host", "headers", "body"},
        "response": {"status", "headers", "body"}}
+
+    The sanitized flag is set ONLY after the full exchange passes both
+    header and body redaction (any exception means no flag) — and the
+    output carries the redaction log so a reviewer can see what fired.
     """
+    pol = policy or SanitizationPolicy()
     req = exchange.get("request") or {}
     resp = exchange.get("response") or {}
+    req_h, fired_h1 = sanitize_headers(req.get("headers"))
+    resp_h, fired_h2 = sanitize_headers(resp.get("headers"))
+    req_b, fired_b1 = pol.sanitize_body(req.get("body") or "")
+    resp_b, fired_b2 = pol.sanitize_body(resp.get("body") or "")
+    fired = sorted(set(fired_h1 + fired_h2 + fired_b1 + fired_b2))
+    # 'sanitized: True' is earned by completing the full pass above.
     return {
         "kind": "request-response",
         "sanitized": True,
+        "redactions": fired,
         "request": {
             "method": req.get("method"),
             "url": f"{req.get('scheme', 'https')}://{req.get('host')}{req.get('path', '')}",
-            "headers": sanitize_headers(req.get("headers")),
+            "headers": req_h,
             "body_len": len(req.get("body") or ""),
-            "body": (req.get("body") or "")[:2000],  # truncated, sanitized upstream
+            "body": req_b,
         },
         "response": {
             "status": resp.get("status"),
-            "headers": sanitize_headers(resp.get("headers")),
+            "headers": resp_h,
             "body_len": len(resp.get("body") or ""),
-            "body": (resp.get("body") or "")[:2000],
+            "body": resp_b,
         },
         "source_exchange_id": exchange.get("id"),
     }

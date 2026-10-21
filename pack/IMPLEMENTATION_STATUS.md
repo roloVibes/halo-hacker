@@ -33,6 +33,14 @@
 - [x] skills/ content deferred to M3 alongside the ingestion bridge (the
       corpus is user data, not shippable methodology)
 
+## P0 hardening (0.4.0, 2026-10-21 — external review)
+
+All five review findings addressed: confirmed-conditional schema,
+ledger-resolvable evidence refs, fail-closed jsonschema, write-time
+authorization checks, chain checkpoints + atomic writes, controlled
+withdrawal/purge, Caido body redaction, ingestion relevance/sensitivity
+separation. 50 pack + 20 ingest tests green (TEST_RESULTS.md).
+
 ## Milestone 3: Tool integrations — PARTIAL (0.3.0, 2026-10-21)
 
 - [x] Scanner-result normalizers (`tools/normalizers.py`): Nuclei -jsonl and

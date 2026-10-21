@@ -1,32 +1,208 @@
-# halo-hacker
+# Halo Hacker
 
-**A portable, evidence-driven security assessment methodology executed through
-[Halo Harness](https://github.com/roloVibes/Halo-Harness)'s multi-model agent
-architecture.**
+**Security testing works better as a team.**
 
-halo-hacker turns Halo — a general-purpose multi-model agent harness — into a
-professional security assessment team. It is **not another agent framework**:
-it has no runtime, no model config, no orchestration engine of its own. It is
-two things that bolt onto Halo:
+**Your models. Your methodology. Your security testing team.**
 
-1. **A capability pack** (`pack/`) — security agent roles, team lineups,
-   testing playbooks, engagement/scope/finding schemas, and reporting rules.
-2. **An ingestion engine** (`ingest/`) — fills your own private knowledge base
-   from your notes, PDFs, GitHub pages, and YouTube transcripts.
+Halo Hacker brings specialized security agents, reusable testing playbooks,
+and evidence-driven workflows to [Halo Harness](https://github.com/roloVibes/Halo-Harness).
 
-Halo provides the machinery (model routing, delegation, budgets, Studio,
-memory, cost tracking). halo-hacker provides everything security-specific.
-Nothing is duplicated and nothing in Halo is patched.
+Instead of relying on a single model to find something interesting and call
+it a vulnerability, Halo Hacker is designed around how real assessments
+work: understand the target, investigate a hypothesis, reproduce the
+behavior, review the evidence, and write a finding someone else can verify.
 
-> **Authorization is the spine.** Everything here assumes a signed, in-scope,
-  in-window engagement. Scope is deny-by-default at the policy layer — an
-  agent cannot widen it by changing its own instructions, picking a different
-  model, or delegating elsewhere. Nothing in this repository is a tool for
-  attacking systems you are not explicitly authorized to test.
+Bring your own models. Bring your own knowledge. Keep control of the
+assessment.
+
+> **Early development:** The agent templates, playbook catalog, knowledge
+> ingestion engine, and offline findings tools exist today. Full Studio
+> integration, distributed Fleet workflows, and execution-time scope
+> enforcement are still in development.
+
+## A security team, not a single prompt
+
+A useful assessment takes different kinds of thinking. Mapping an
+application is different from evaluating an authorization boundary.
+Reproducing a finding is different from reviewing its evidence. Writing a
+clear report is another skill entirely.
+
+Halo Hacker divides that work among specialized agents:
+
+| Agent | Responsibility |
+|---|---|
+| Orchestrator | Plans the engagement and coordinates the work |
+| Recon | Builds an understanding of the approved attack surface |
+| Web Tester | Applies web application assessment playbooks |
+| API Tester | Reviews API behavior, access controls, and input handling |
+| AI Security Tester | Evaluates AI application boundaries and integrations |
+| Validator | Independently checks suspected findings |
+| Judge | Reviews evidence, confidence, and duplicates |
+| Reporter | Turns confirmed findings into reviewable draft reports |
+
+Halo Harness supplies the runtime, model routing, delegation, sessions, and
+tools. Halo Hacker supplies the security methodology.
+
+The roles are model agnostic, so the team does not depend on any single
+provider.
+
+## Methodology you can actually reuse
+
+Security testing shouldn't begin from a blank prompt every time.
+
+Halo Hacker includes 16 versioned playbooks across reconnaissance,
+discovery, validation, evidence collection, and reporting, along with five
+team lineups for web applications, APIs, AI security, cloud configuration
+review, and findings validation.
+
+Playbooks describe prerequisites, expected observations, evidence
+requirements, impact levels, and approval gates. They are structured to be
+inspected, improved, and executed consistently as the Halo integration
+matures.
+
+The long term goal is simple: make your methodology portable across models,
+sessions, and authorized engagements.
+
+## Evidence over confidence
+
+An agent's suspicion is not a confirmed finding.
+
+Halo Hacker's finding model separates candidates from independently
+reproduced and reviewed results. Its offline tooling includes structured
+findings, an evidence ledger, scanner result normalization, deduplication,
+and draft reporting from confirmed records.
+
+The intended workflow is:
+
+**Discover → Investigate → Validate → Review → Report**
+
+A tester proposes a candidate. A validator checks it independently. A judge
+examines the evidence and duplication. A reporter produces a draft that a
+human reviews before submission.
+
+That is the standard the product is being built toward, not a claim that
+the full live workflow is already integrated.
+
+## Your knowledge belongs in the workflow
+
+A security agent is more useful when it can work from the same methodology
+and notes as its operator.
+
+Halo Hacker includes a knowledge ingestion engine for local notes and
+Obsidian vaults, PDFs, GitHub content, and YouTube transcripts. It records
+source provenance and supports local model processing by default, with
+hosted processing as an explicit choice.
+
+The repository does not ship anyone's private notes, client findings, or
+populated knowledge base. You bring the sources you trust, and you decide
+where they are processed.
+
+## Built on Halo Harness
+
+Halo Hacker is an expansion pack, not a competing agent runtime.
+
+| Halo Harness provides | Halo Hacker contributes |
+|---|---|
+| Model routing and agent execution | Security specific agent roles |
+| Teams and orchestration | Assessment lineups and playbooks |
+| Tools, skills, and MCP integration | Security tool adapters and knowledge ingestion |
+| Sessions, permissions, and budgets | Engagement requirements and finding lifecycle |
+| Studio and Fleet infrastructure | Future assessment workspace and distributed workflows |
+
+The separation matters. It lets Halo continue improving as a general
+purpose agent platform while Halo Hacker develops as a focused security
+assessment product.
+
+## What works today
+
+The current repository includes:
+
+- Eight Halo compatible agent definitions and five team templates.
+- Sixteen schema validated testing playbooks.
+- Engagement, scope, playbook, and finding schemas.
+- Offline findings storage, evidence tracking, and draft report generation.
+- Nuclei and Semgrep output normalizers that treat scanner results as
+  candidates, not confirmed findings.
+- A knowledge ingestion engine with CLI and MCP entry points.
+- A compatibility installer for existing Halo versions.
+
+The Caido adapter is currently a read only draft with unverified live
+transport. The native Halo pack registry, Studio Engagements workspace,
+Fleet specific extensions, and execution time Security Tool Broker are not
+yet available as integrated production features.
+
+See [pack/IMPLEMENTATION_STATUS.md](pack/IMPLEMENTATION_STATUS.md),
+[pack/COMPATIBILITY.md](pack/COMPATIBILITY.md), and
+[pack/TEST_RESULTS.md](pack/TEST_RESULTS.md) for details.
+
+## Try the current pack
+
+Install Halo Harness first.
+
+On currently released Halo versions, use the compatibility installer from
+the Halo Hacker repository root:
+
+```bash
+pack/scripts/install-compat.sh
+halo teams use hh-web-app-assessment
+```
+
+The installer adds the pack's role bios and team templates through Halo's
+existing configuration directories without patching Halo itself. A native
+`halo pack install` workflow is planned for a future Halo release.
+
+To validate the pack and run its offline tests:
+
+```bash
+uv run --python 3.12 --with pyyaml --with jsonschema python pack/tools/validate_pack.py
+uv run --python 3.12 --with pyyaml --with pytest --with jsonschema pytest pack/tests/
+```
+
+> **Note:** The role and team compatibility path is implemented, but a
+> complete live assessment running through Halo has not yet been
+> demonstrated in the published test results.
+
+## What's next
+
+The next milestones focus on turning the existing components into one
+working experience:
+
+1. Connect the knowledge ingestion engine to agent workflows and finish
+   live tool integrations.
+2. Demonstrate an end to end assessment against a controlled local lab,
+   from candidate finding to reviewed report.
+3. Add an Engagements workspace to Halo Studio for scope, progress,
+   evidence, findings, and approvals.
+4. Extend Halo Fleet so compatible workers can contribute to the same
+   authorized assessment.
+5. Integrate an independent Security Tool Broker for execution time scope
+   checks and approvals before unattended active testing.
+
+## Built for authorized assessments
+
+Halo Hacker is intended for systems you own or are explicitly authorized
+to assess. Engagement definitions and playbook approval requirements are
+part of the design, but declarative policy is not a substitute for runtime
+enforcement.
+
+Until the execution broker is available and verified, active testing needs
+human control and appropriate external safeguards.
+
+## License
+
+A license has not yet been selected. The repository is currently private
+while the upstream Halo Harness extension interfaces land; visibility may
+change once a license is chosen. No open-source reuse rights are granted
+until then.
 
 ---
 
-## The big picture: how an assessment runs
+# Technical documentation
+
+*The sections below are the substance behind the pitch above: how the
+pieces actually work, with the real schemas and code paths.*
+
+## How an assessment runs
 
 ```
 you ──install pack──▶ Halo ──activates a lineup──▶ a security team
@@ -38,115 +214,34 @@ an engagement (signed scope) ──▶ playbooks execute ──▶ candidates
                        independent validation ──▶ judge gate ──▶ report
 ```
 
-Concretely:
-
-1. You install the pack into Halo and activate a lineup, e.g.
-   `halo teams use hh-web-app-assessment`. The session now has an
-   orchestrator, recon, testers, a validator, a judge, and a reporter.
-2. You create an **engagement**: a signed authorization record, the exact
-   in-scope targets, the testing window, approved test accounts, rate limits,
-   and what data may leave the machine (`pack/schemas/engagement.schema.json`).
+1. Install the pack and activate a lineup (`halo teams use
+   hh-web-app-assessment`). The session now has an orchestrator, recon,
+   testers, a validator, a judge, and a reporter.
+2. Create an **engagement** — a signed authorization record, exact
+   in-scope targets, the testing window, approved test accounts, rate
+   limits, and data-handling locality
+   (`pack/schemas/engagement.schema.json`).
 3. The orchestrator decomposes the engagement into **playbook** tasks and
    delegates each to the right specialist role.
-4. Testers produce **candidate findings** — never confirmed ones. An
-   independent validator reproduces each from the record alone, a judge gates
-   it on evidence quality and duplication, and only then does the reporter
-   draft the report, with every claim tracing to evidence.
+4. Testers produce **candidate findings** — never confirmed ones.
 
----
+## Agent bios: the real grammar
 
-## Part 1 — The ingestion engine (`ingest/`): your data, your machine
-
-A security agent is only as good as what it knows. halo-hacker **ships
-empty** — no findings, no populated KB, no methodology corpus — and you fill
-it with your own material. That is deliberate: a pentester's notes are client
-data, and the whole engine is built around that fact.
-
-**What goes in** (one pipeline, four source adapters):
-
-| Source | Adapter | Trust tier |
-|---|---|---|
-| Local notes (markdown/txt/org/rst trees, Obsidian vaults) | filesystem walk | **first-party** — authoritative |
-| PDFs | PyMuPDF (fails loudly on encrypted/scanned, never a silent partial) | first-party |
-| GitHub pages | one file per fetch (blob/raw URL — one URL, one document, auditable) | **third-party** — lead, needs corroboration |
-| YouTube videos | yt-dlp subtitles | third-party — lead |
-
-**What happens to it**, in order:
-
-1. **Privacy filter first** — non-security content is excluded before
-   anything persists, and the filter must *prove it dropped something*
-   (prints N-before → M-after). A filter that silently matches nothing is
-   indistinguishable from an empty corpus.
-2. **Classification** — each document is sorted into the KB's router
-   structure (question-first `_moc-*` routers: "I have a 403, what are my
-   options?" style entry points).
-3. **Distillation** — the document is condensed into a KB entry. By default
-   this runs on a **local model lane** so your notes never leave your
-   machine; hosted distillation is explicit opt-in with a warning.
-4. **Gated upsert** — the entry lands in a provenance ledger: source
-   file/URL, content hash, date, confidence, trust tier. There is **no
-   delete verb, ever** — append and keyed upsert only; removal is a human
-   action in your editor.
-5. **Trust tiers apply at read time too** — first-party entries are treated
-   as authoritative; web-derived entries are *leads requiring corroboration*,
-   every one carrying its source URL and fetch date. The agents' KB-lookup
-   discipline treats uncorroborated web-derived entries as leads, not facts.
-
-**Hardening baked in:** pentest notes contain payloads and prompt injections,
-so note content is treated as data, never instructions — raw note content
-never reaches tool-call context (there's a planted-injection regression
-suite). Ambiguous or multi-target writes are refused rather than guessed
-(refusal-biased writes; a high refusal rate is the system working).
-
-**Two ways to drive it:**
-- `mcp_server.py` — in-session MCP tools (the primary mode; rides Halo's
-  model routing and filter handling). Run with `--selftest`.
-- `cli.py` — headless CLI over the same library, exit-code gated, refuses
-  on error rather than filing bad content.
-
----
-
-## Part 2 — The capability pack (`pack/`): the security team
-
-### Agent roles (`pack/agents/`)
-
-Eight role bios written in Halo's native agent-bio grammar, so Halo's own
-loaders, editors, Studio Roles view, and doctor handle them like any other
-agent. Each declares its model policy (`default` — **never a hardcoded
-model**; your lineup decides which lane each role runs on), tool
+The eight roles (`pack/agents/hh-*.yaml`) are written in Halo's native
+agent-bio grammar, so Halo's own loaders, editors, Studio Roles view, and
+doctor handle them like any other agent. Each declares its model policy
+(`default` — never a hardcoded model; your lineup decides the lane), tool
 allow/deny lists, budgets, and a pack extension block (`hh:`) carrying the
-security role contract: responsibility, boundaries, inputs/outputs, evidence
-requirements, and completion criteria.
+security role contract: responsibility, boundaries, inputs/outputs,
+evidence requirements, and completion criteria. The Halo loader tolerates
+the unknown top-level `hh:` key (verified against the harness's own
+validator), so the block round-trips through the real editor untouched.
 
-| Role | Kind | Job |
-|---|---|---|
-| `hh-orchestrator` | main | Turns the engagement into a plan, delegates, tracks scope/budget/coverage. Never tests anything itself. |
-| `hh-recon` | researcher | Maps the attack surface from *provided* data (traffic, specs, docs). Read-only. |
-| `hh-web-tester` | custom | Web app testing per the playbooks (WSTG-aligned). Produces candidates only. |
-| `hh-api-tester` | custom | API testing — object/function-level authz, authn, input handling (API Top 10). |
-| `hh-ai-security-tester` | custom | AI app testing — prompt injection, tool boundaries, output controls (LLM Top 10). |
-| `hh-validator` | custom | Independently reproduces candidates *from the record alone* — does not see the tester's reasoning. |
-| `hh-judge` | judge | Gates findings on evidence quality, confidence, duplication. Never confirms on assertion. |
-| `hh-reporter` | custom | Generates the report from confirmed records. Drafts only — a human submits. |
+## Playbook anatomy
 
-### Team lineups (`pack/teams/`)
-
-Five ready-made Halo team templates assigning those bios to roles:
-
-- `hh-web-app-assessment` — recon → web → validate → judge → report
-- `hh-api-security-review` — API-focused, spec/traffic driven
-- `hh-ai-security-review` — LLM-app focused
-- `hh-cloud-config-assessment` — config/IAM review (read-heavy)
-- `hh-finding-validation-reporting` — just the quality pipeline (re-checks, report regeneration)
-
-Clone and customize any of them (`halo teams edit …`) without touching the
-pack's defaults. Applying a lineup never overwrites your own bios.
-
-### Playbooks (`pack/playbooks/`) — the core of the methodology
-
-A playbook is a **versioned, declarative testing workflow** — structured
-YAML, validated against a schema, completely independent of any model or
-provider (a test mechanically rejects any playbook that names one). Example:
+A playbook is versioned, declarative YAML validated against
+`pack/schemas/playbook.schema.json`, model-independent (a test rejects any
+playbook naming a model or vendor). Real example:
 
 ```yaml
 playbook_id: discovery.authz-object-level
@@ -154,13 +249,13 @@ version: "1.0"
 objective: >
   Detect broken object-level authorization: can approved test account A
   read or modify objects it should not own (OWASP API1)?
-assigned_role: api                     # which bio executes it
+assigned_role: api
 methodology_refs: [OWASP API1:2023, OWASP WSTG-ATHZ-02]
 prerequisites:
   - {kind: inventory, detail: recon.endpoint-discovery output}
   - {kind: test_accounts, detail: two accounts with different ownership}
 scope_requirements:
-  required_activities: [low-impact-validation]   # checked against the engagement
+  required_activities: [low-impact-validation]
 stages:
   - name: cross-account-read-probe
     impact: low-impact
@@ -169,135 +264,90 @@ stages:
     evidence_requirements: [sanitized request/response pair per probe]
 ```
 
-The 16 shipped playbooks cover all five phases — **reconnaissance**
-(asset inventory, endpoint discovery, tech ID — from provided data, not
-active scanning), **discovery** (authn, session handling, object/function
-authz, input handling, business logic, LLM prompt injection, LLM tool
-boundaries, cloud IAM config), **validation** (independent low-impact repro,
-and an approval-gated active-validation playbook), **evidence**
-(sanitize-and-store), and **reporting** (draft from confirmed findings).
+Mechanically enforced on every playbook: ordered stages with rising impact;
+**the approval gate** (any stage above `low-impact` must set
+`requires_approval: true` — enforced by validator and test, never by prompt
+wording); per-stage resource limits; judge requirements.
 
-Rules the schema and validator enforce on every playbook:
-
-- **Ordered stages with rising impact**, each declaring what it expects to
-  observe and what evidence it must capture.
-- **The approval gate:** any stage above `low-impact` must set
-  `requires_approval: true` — enforced mechanically, not by prompt wording.
-- **Resource limits per stage** (max requests, timeouts) so a playbook can't
-  run away.
-- **A judge requirement** — most playbooks require independent validation
-  and a judge review before anything counts.
-
-### The finding lifecycle — no glazing, enforced by schema
+## The finding lifecycle — enforced, not aspirational
 
 ```
 raw observation → validated finding → report section
       ↑ gate            ↑ gate             ↑ gate
 ```
 
-- Testers produce **candidates** with expected-vs-observed and reproduction
-  steps. That's all they're allowed to produce.
-- The **validator** reproduces independently — from the candidate record,
-  without the tester's session or reasoning — and emits
-  reproduced / not-reproduced / needs-more-info.
-- The **judge** decides: confirmed / rejected / needs-validation /
-  duplicate / requires-human-review, always with a cited rationale, never a
-  bare severity.
-- The **reporter** generates from confirmed records only; every claim
-  carries an evidence reference.
-- The finding **schema itself** refuses a "confirmed" finding that lacks
-  validation, a reviewer decision, and non-empty evidence — an agent
-  asserting something is true is not, structurally, enough (there's a
-  test pinning this).
-- **Attack paths are a projection over findings** (each finding declares
-  capability tokens it `requires` and `grants`), never a stored graph —
-  a stored graph goes stale; a projection can't.
+- The finding **schema** (`pack/schemas/finding.schema.json`) carries a
+  conditional constraint: `status: confirmed` is structurally impossible
+  without `validation.status: reproduced`, `validation.independent: true`,
+  and a `reviewer_decision` citing evidence refs. An agent asserting a
+  finding is true cannot satisfy the schema.
+- `pack/tools/findings_store.py` additionally **resolves every confirmed
+  finding's evidence references against the actual ledger rows** — a
+  confirmed finding citing evidence that doesn't exist is refused, and a
+  mismatched artifact hash is refused.
+- The store is **fail-closed**: jsonschema is a hard dependency (no
+  validation, no store); writes outside the engagement's authorization
+  window or status are refused.
+- The evidence ledger is **hash-chained** with tamper, row-removal, and
+  artifact-corruption detection; **checkpoints** are the external anchor
+  (copy one off-box and `verify_against_checkpoint()` catches a local
+  rewrite); all writes are atomic (temp + rename).
+- **Controlled withdrawal** exists for sensitive content
+  (`withdraw_finding` leaves a tombstone with the original record's hash;
+  `purge_artifact` removes bytes but keeps a recorded PURGED marker) —
+  audit history survives, content doesn't have to.
+- **Attack paths are a projection** over findings (`requires`/`grants`
+  capability tokens), never a stored graph.
 
-### Engagement and scope — the wall
+## The ingestion engine
 
-Every engagement is a signed record (`pack/schemas/engagement.schema.json` +
-`scope-targets.schema.json`): authorization reference, exact targets
-(hostnames/CIDRs/ranges) and exclusions (which outrank inclusions), the
-testing window, approved test accounts (credential references only — no
-secrets stored), rate/concurrency limits, data-handling locality
-(on-box-only / local-models-only if you want engagement content to never
-leave your machine), and retention. The design target is a Security Tool
-Broker that checks every tool action against this policy before execution,
-deny-by-default, at exec time against *resolved* addresses — independent of
-any model. The mechanical pre-tool-call hook doesn't exist in Halo yet, so
-until it does, active stages are human-gated in the playbook schema itself
-(tracked in `pack/CORE_REQUESTS.md` as CR-4). Prompt wording is never the
-enforcement mechanism.
+`ingest/` — one pipeline, four source adapters:
 
----
+| Source | Adapter | Trust tier |
+|---|---|---|
+| Local notes (markdown/org/rst, Obsidian vaults) | filesystem walk | first-party — an owned source |
+| PDFs | PyMuPDF (fails loudly on encrypted/scanned) | first-party |
+| GitHub pages | one file per fetch — auditable | third-party — lead, needs corroboration |
+| YouTube | yt-dlp subtitles | third-party — lead |
 
-## How it works with Halo Harness — the exact boundary
+Pipeline stages: **privacy filter** (two independent judgements —
+relevance via cyber signals, sensitivity via structured secret/PII
+patterns; secrets drop a document ALWAYS, even a relevant one; a life-word
+alone never discards a technical note; the filter proves it dropped
+something: N-before → M-after) → **classify** into the KB's question-first
+router structure → **distill** (local model lane by default; hosted is
+explicit opt-in) → **gated upsert** into a provenance ledger (source,
+content hash, date, confidence, trust tier). **No delete verb** — append
+and keyed upsert only. First-party entries are trusted as owned sources,
+never automatically authoritative as technical conclusions. Note content
+is data, never instructions (planted-injection regression suite); ambiguous
+writes are refused (refusal-biased).
 
-Halo Harness ([github.com/roloVibes/Halo-Harness](https://github.com/roloVibes/Halo-Harness))
-is the chassis: model routing across OpenRouter/Ollama/Anthropic/OpenAI/
-Databricks and more, the agent runtime, delegation and team enforcement,
-tool permissions, budgets and cost tracking, Studio visualization, memory,
-and the Governor rate limiter. halo-hacker consumes all of it and duplicates
-none of it.
+Entry points: `mcp_server.py` (in-session MCP tools, `--selftest`) and
+`cli.py` (headless, exit-code gated, refuses on error).
 
-The rule that decides where anything lives:
+## Scanner normalizers
+
+`pack/tools/normalizers.py` turns Nuclei (`-jsonl`) and Semgrep (`--json`)
+output into schema-valid **candidate** findings — deduped, provenance
+labeled, each carrying "scanner output is a candidate, never confirmation."
+They enter the same validation → judge → report pipeline as human
+candidates.
+
+## The harness boundary
 
 > If it moves bytes between machines or gates what crosses a boundary →
 > **Halo Harness**. If it's about what the agent knows or does with
-> knowledge → **halo-hacker**.
+> knowledge → **Halo Hacker**.
 
-In practice:
-
-- The pack's bios are ordinary Halo agent bios — your lineup picks each
-  role's model, so a role can run on a local Ollama model, an OpenRouter
-  route, or the session default, and you can change that any time without
-  touching the pack.
-- The pack's teams are ordinary Halo team templates — delegation, routing,
-  budgets, and escalation all execute through Halo's existing machinery.
-- A security "swarm" is just N delegated Halo sub-agents with these roles —
-  identical chassis machinery to a coding team; the difference is entirely
-  the org definition riding on it.
-- The ingestion engine's in-session mode rides Halo's model lanes (so a
-  filtered/failed model response is never persisted as an answer).
-
-**Install (requires Halo 3.2.0.0+ pack registry).** Until that version
-ships, the documented compatibility adapter installs the pack's bios and
-teams through Halo's stable user directories — no Halo files are patched:
-
-```bash
-pack/scripts/install-compat.sh          # validates first, refuses on failure
-halo teams use hh-web-app-assessment    # activate a lineup
-pack/scripts/uninstall-compat.sh        # removes exactly what it installed
-```
-
-Upstream gaps that matter to this pack (pack registry, Studio contribution
-registry, fleet capabilities, the broker hook, the persistent supervisor)
-are tracked with rationale and interim workarounds in
-**`pack/CORE_REQUESTS.md`**. Nothing is hacked around with private APIs.
+Upstream gaps this pack depends on are tracked with rationale and interim
+workarounds in [pack/CORE_REQUESTS.md](pack/CORE_REQUESTS.md): the pack
+registry (CR-1), Studio contribution registry (CR-2), fleet capabilities
+(CR-3), the tool-action broker hook (CR-4), the persistent supervisor
+(CR-5), a documented Caido interface (CR-6). Nothing is hacked around with
+private APIs, and no Halo file is patched.
 
 ---
 
-## Development
-
-```bash
-# validate the pack (exit-code gated)
-uv run --python 3.12 --with pyyaml --with jsonschema python pack/tools/validate_pack.py
-
-# full test suite (grammar, negatives, schema fixtures, real-harness pin)
-uv run --python 3.12 --with pyyaml --with pytest --with jsonschema pytest pack/tests/
-```
-
-The suite includes a compatibility pin: every bio and team is run through
-**Halo's own validators** when a Halo-Harness checkout is present, proving
-the pack speaks the real grammar — and the ingestion engine has its own
-offline test suite (`tests/test_ingest.py`).
-
-Status, roadmap, and compatibility: `pack/IMPLEMENTATION_STATUS.md`,
-`pack/COMPATIBILITY.md`, `pack/PLAYBOOK_CATALOG.md`,
-`pack/INTEGRATION_STATUS.md`, `pack/TEST_RESULTS.md`.
-
-## License
-
-The repository is public as of 2026-10-21 (leakcheck passed — see
-`pack/TEST_RESULTS.md`). No open-source license has been chosen yet; all
-rights reserved until one is.
+**Halo Harness runs the agents. Halo Hacker gives them a security
+methodology worth running.**

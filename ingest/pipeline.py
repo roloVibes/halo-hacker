@@ -30,24 +30,91 @@ CYBER_SIGNALS = re.compile(
     r"kerberos|smb|ldap|c2|pivot|lateral)\b"
 )
 
-PERSONAL_SIGNALS = re.compile(
-    r"(?i)\b(birthday|anniversary|my.?password|doctor|prescription|"
-    r"mortgage|tax.?return|resume|cover.?letter)\b"
+# --- 2026-10-21 review hardening: relevance and sensitivity are SEPARATE --
+#
+# The old filter was one keyword classifier: a security note with a secret in
+# it passed (no personal keyword), and a legit technical note dropped on the
+# word "resume" ("resume the exploit chain"). Now:
+#
+#   SENSITIVE_DATA  -> drop ALWAYS, whatever the topic (secrets/PII must
+#                      never persist, even inside relevant security notes).
+#   PERSONAL_LIFE   -> drop only when the doc is ALSO not security-relevant
+#                      (a relevant note may legitimately mention a doctor's
+#                      portal as a target; an irrelevant life note may not).
+#   CYBER_SIGNALS   -> relevance: required to keep.
+#
+# Both halves stay heuristic keyword sets at v0 (the model-based filter
+# replaces the relevance half later); the sensitive set is deliberately
+# conservative and EXTENDED, not narrowed, over time.
+
+SENSITIVE_DATA = re.compile(
+    r"(?i)("
+    r"-----begin [a-z ]*private key-----"
+    r"|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}(?![^\s]*\.(md|py|yaml|json))"  # emails, not file refs
+    r"|\b\d{3}-\d{2}-\d{4}\b"                    # SSN-shaped
+    r"|\b(?:\d[ -]?){13,16}\b"                     # card-shaped
+    r"|sk-[a-z0-9_-]{20,}"                            # OpenAI-style keys
+    r'|(?:password|passwd|secret|token)\s*[:=]\s*[\'"]?[^\s\'"]{8,}'
+    r"|AKIA[0-9A-Z]{16}"                              # AWS access keys
+    r"|ghp_[A-Za-z0-9]{36}"                           # GitHub PATs
+    r")"
+)
+
+PERSONAL_LIFE = re.compile(
+    r"(?i)\b(birthday|anniversary|prescription|mortgage|tax.?return|"
+    r"cover.?letter|wedding|funeral|diagnos(?:is|ed))\b"
 )
 
 
+def is_relevant(content: str) -> bool:
+    """Relevance ONLY: is this security material? No sensitivity judgement."""
+    return bool(CYBER_SIGNALS.search(content))
+
+
+def find_sensitive(content: str) -> "list[str]":
+    """Sensitivity ONLY: which sensitive-data rules fire? Returns rule
+    descriptions (empty list = clean). No relevance judgement."""
+    hits = []
+    if re.search(r"-----begin [a-z ]*private key-----", content, re.I):
+        hits.append("private-key")
+    if re.search(r"\b\d{3}-\d{2}-\d{4}\b", content):
+        hits.append("ssn-shaped")
+    if re.search(r"\b(?:\d[ -]?){13,16}\b", content):
+        hits.append("card-shaped")
+    if re.search(r"sk-[a-z0-9_-]{20,}", content, re.I):
+        hits.append("api-key")
+    if re.search(r'(?:password|passwd|secret|token)\s*[:=]\s*[\'"]?[^\s\'"]{8,}', content, re.I):
+        hits.append("credential-assignment")
+    if re.search(r"AKIA[0-9A-Z]{16}", content):
+        hits.append("aws-key")
+    if re.search(r"ghp_[A-Za-z0-9]{36}", content):
+        hits.append("github-pat")
+    if re.search(r"[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}(?![^\s]*\.(md|py|yaml|json))",
+                 content, re.I):
+        hits.append("email")
+    return hits
+
+
 def privacy_filter(docs: list[dict]) -> tuple[list[dict], list[dict]]:
-    """Split into (kept, dropped). Kept = has a cyber signal AND no strong
-    personal signal. v0 is a heuristic — the model-based filter replaces the
-    keyword half later, but the personal-signal exclusion stays hard-coded."""
+    """Split into (kept, dropped). Two INDEPENDENT judgements per doc:
+    relevance (cyber signal) and sensitivity (structured secrets/PII).
+    - sensitive data -> dropped ALWAYS (reason names the rules that fired)
+    - not relevant   -> dropped (personal-life note says why when it is one)
+    - relevant + clean -> kept. First-party docs are kept as OWNED SOURCES
+      (trust tier recorded by the store) — trusted as input, never
+      automatically authoritative as a technical conclusion."""
     kept, dropped = [], []
     for d in docs:
-        if PERSONAL_SIGNALS.search(d["content"]):
-            dropped.append({"doc": d, "reason": "personal-signal"})
-        elif CYBER_SIGNALS.search(d["content"]):
-            kept.append(d)
+        content = d["content"]
+        sensitive = find_sensitive(content)
+        if sensitive:
+            dropped.append({"doc": d,
+                            "reason": "sensitive-data:" + ",".join(sensitive)})
+        elif not is_relevant(content):
+            why = "personal-life" if PERSONAL_LIFE.search(content) else "no-cyber-signal"
+            dropped.append({"doc": d, "reason": why})
         else:
-            dropped.append({"doc": d, "reason": "no-cyber-signal"})
+            kept.append(d)
     return kept, dropped
 
 

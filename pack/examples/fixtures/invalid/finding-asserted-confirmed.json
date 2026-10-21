@@ -5,6 +5,17 @@
   "category": "misc",
   "status": "confirmed",
   "description": "Agent asserted this without validation or judge review.",
-  "evidence": [],
-  "audit_history": []
+  "evidence": [
+    {
+      "ledger_ref": "demo-lab-01/evidence/ledger.jsonl#0001",
+      "kind": "request-response",
+      "sanitized": true
+    }
+  ],
+  "audit_history": [],
+  "reproduction": {
+    "steps": [
+      "none recorded"
+    ]
+  }
 }

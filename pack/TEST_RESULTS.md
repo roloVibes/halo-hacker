@@ -126,3 +126,49 @@ New M3/M4 tests (tests/test_m3_m4.py, all offline):
 - Caido live transport unverified (draft guard raises rather than
   guessing) — needs a live instance round.
 - Garak/PyRIT, Obsidian bridge, report destinations: not started.
+
+## 2026-10-21 — P0 hardening from the external review (pack 0.4.0)
+
+Every "guarantee described in the documentation" gap the review named is
+now mechanically enforced:
+
+1. **Confirmed-conditional in the schema** — `status: confirmed` requires
+   `validation.status: reproduced` + `validation.independent: true` +
+   `reviewer_decision.decision: confirmed` with evidence refs (allOf/if-then).
+   The negative fixture now carries NON-EMPTY evidence so the conditional
+   (not minItems) is what rejects it — the reviewer's exact bypass.
+2. **Ledger-resolvable evidence** — put_finding resolves every confirmed
+   finding's evidence refs against actual ledger rows; unresolvable refs
+   and mismatched artifact hashes are refusals.
+3. **Fail-closed store** — jsonschema is a hard import; no degraded mode.
+4. **Authorization at write time** — add_evidence/put_finding refuse
+   outside the window or when the engagement isn't active.
+5. **Chain checkpoints** — checkpoint() + verify_against_checkpoint()
+   (the off-box anchor catches a local rewrite+recompute); atomic writes
+   everywhere (temp + os.replace).
+6. **Controlled withdrawal/purge** — withdraw_finding leaves a tombstone
+   with the original record hash; purge_artifact removes bytes with a
+   recorded PURGED marker; the chain stays verifiable. Audit survives,
+   content doesn't have to.
+7. **Caido body redaction** — structured SanitizationPolicy (bearer/JWT/
+   credential/API-key/private-key/PAN/SSN rules, user-extendable); the
+   sanitized flag is set only after the full header+body pass; the output
+   carries the redaction log.
+8. **Ingestion filter separation** (ingest/pipeline.py) — relevance and
+   sensitivity are now independent judgements: structured secrets drop a
+   doc ALWAYS (even a relevant one); a life-word alone never discards a
+   technical note; first-party = owned source, never auto-authoritative.
+
+### Test suites
+
+```
+pack:  50 passed  (uv, Python 3.12.13, pytest 9.1.1, jsonschema)
+ingest: 20 passed (.venv Python 3.12)
+validator: OK — 8 bios, 5 teams, 16 playbooks, 4 schemas (exit 0)
+```
+
+New negative cases pinned: confirmed-without-validation (schema),
+confirmed-with-unresolvable-evidence (store), non-independent validation
+(schema), expired window (store), paused status (store), truncation below
+checkpoint (external anchor), withdraw/purge semantics, JSON-body
+credential redaction, life-word non-discard, per-rule secret detection.

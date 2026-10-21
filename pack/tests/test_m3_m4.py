@@ -17,6 +17,17 @@ import normalizers  # noqa: E402
 from caido_adapter import sanitize_headers, normalize_exchange, CaidoClient, CaidoUnavailable  # noqa: E402
 
 FIXTURES = PACK_ROOT / "examples" / "fixtures" / "valid"
+
+
+def seed_confirmed(store, finding):
+    """Give a confirmed finding resolvable evidence (a real ledger row)."""
+    row = store.add_evidence(
+        ("evidence for " + finding["finding_id"]).encode(),
+        actor="hh-validator", action="capture")
+    finding["evidence"][0]["ledger_ref"] = f"eng/evidence/ledger.jsonl#{row['seq']}"
+    finding["evidence"][0]["artifact_sha256"] = row["artifact_sha256"]
+    return finding
+
 jsonschema = pytest.importorskip("jsonschema")
 
 
@@ -85,7 +96,7 @@ def test_finding_must_pass_schema(store):
 
 
 def test_finding_roundtrip_and_no_delete(store):
-    f = json.loads((FIXTURES / "finding.json").read_text())
+    f = seed_confirmed(store, json.loads((FIXTURES / "finding.json").read_text()))
     store.put_finding(f)
     assert store.get_finding(f["finding_id"])["status"] == "confirmed"
     with pytest.raises(FindingStoreError):
@@ -93,8 +104,8 @@ def test_finding_roundtrip_and_no_delete(store):
 
 
 def test_duplicate_marking(store):
-    store.put_finding(json.loads((FIXTURES / "finding.json").read_text()))
-    f = json.loads((FIXTURES / "finding.json").read_text())
+    store.put_finding(seed_confirmed(store, json.loads((FIXTURES / "finding.json").read_text())))
+    f = seed_confirmed(store, json.loads((FIXTURES / "finding.json").read_text()))
     f["finding_id"] = "dl-02-second-instance"
     f["title"] = "Second instance of the same authz gap"
     store.put_finding(f)
@@ -108,8 +119,7 @@ def test_duplicate_marking(store):
 
 
 def test_findings_persist_across_instances(store, tmp_path):
-    f = json.loads((FIXTURES / "finding.json").read_text())
-    store.put_finding(f)
+    store.put_finding(seed_confirmed(store, json.loads((FIXTURES / "finding.json").read_text())))
     # A NEW store over the same tree sees it — persistence across
     # sessions and model changes.
     assert FindingStore(tmp_path / "eng").list_findings()
@@ -118,7 +128,7 @@ def test_findings_persist_across_instances(store, tmp_path):
 # --- M4: report generation ---------------------------------------------------
 
 def test_report_from_confirmed_only(store):
-    confirmed = json.loads((FIXTURES / "finding.json").read_text())
+    confirmed = seed_confirmed(store, json.loads((FIXTURES / "finding.json").read_text()))
     store.put_finding(confirmed)
     cand = json.loads((FIXTURES / "finding.json").read_text())
     cand["finding_id"] = "dl-03-unvalidated"
@@ -135,7 +145,7 @@ def test_report_from_confirmed_only(store):
 
 
 def test_report_refuses_broken_chain(store):
-    store.put_finding(json.loads((FIXTURES / "finding.json").read_text()))
+    store.put_finding(seed_confirmed(store, json.loads((FIXTURES / "finding.json").read_text())))
     store.add_evidence(b"x", actor="a", action="b")
     p = store.ledger
     lines = p.read_text().splitlines()
@@ -183,14 +193,15 @@ def test_semgrep_normalizer(store, tmp_path):
 # --- M3: Caido adapter --------------------------------------------------------
 
 def test_caido_header_sanitization():
-    out = sanitize_headers({"Authorization": "Bearer secret",
-                            "Cookie": "session=x",
-                            "Content-Type": "application/json",
-                            "X-Api-Key": "k"})
+    out, fired = sanitize_headers({"Authorization": "Bearer secret",
+                                   "Cookie": "session=x",
+                                   "Content-Type": "application/json",
+                                   "X-Api-Key": "k"})
     assert out["Authorization"] == "[REDACTED]"
     assert out["Cookie"] == "[REDACTED]"
     assert out["X-Api-Key"] == "[REDACTED]"
     assert out["Content-Type"] == "application/json"
+    assert sorted(fired) == ["header:authorization", "header:cookie", "header:x-api-key"]
 
 
 def test_caido_normalize_exchange():
@@ -213,3 +224,153 @@ def test_caido_normalize_exchange():
 def test_caido_client_refuses_unverified_live_use():
     with pytest.raises(CaidoUnavailable):
         CaidoClient().list_exchanges()   # draft guard: no silent guessing
+
+
+# --- P0 hardening (2026-10-21 external review) --------------------------------
+
+def test_confirmed_requires_independent_validation_schema():
+    # Non-empty evidence, but no validation/reviewer_decision: the schema's
+    # allOf conditional must reject it (this is what the reviewer showed
+    # could slip through before).
+    f = json.loads((FIXTURES / "finding.json").read_text())
+    f.pop("validation"); f.pop("reviewer_decision")
+    f["status"] = "confirmed"
+    import jsonschema as js
+    schema = json.loads((PACK_ROOT / "schemas" / "finding.schema.json").read_text())
+    with pytest.raises(js.ValidationError):
+        js.validate(f, schema)
+
+
+def test_confirmed_with_nonindependent_validation_rejected():
+    f = json.loads((FIXTURES / "finding.json").read_text())
+    f["validation"]["independent"] = False   # shared the tester's session
+    import jsonschema as js
+    schema = json.loads((PACK_ROOT / "schemas" / "finding.schema.json").read_text())
+    with pytest.raises(js.ValidationError):
+        js.validate(f, schema)
+
+
+def test_store_resolves_confirmed_evidence_refs(store):
+    # A confirmed finding whose ledger_ref does NOT resolve is refused by
+    # the store even though the schema passed.
+    f = json.loads((FIXTURES / "finding.json").read_text())
+    f["evidence"][0]["ledger_ref"] = "nowhere#9999"
+    with pytest.raises((FindingStoreError,)):
+        store.put_finding(f)
+
+
+def test_store_accepts_confirmed_with_resolved_refs(store):
+    row = store.add_evidence(b"GET /api/notes/1 -> 200 alice data",
+                             actor="hh-validator", action="capture")
+    f = json.loads((FIXTURES / "finding.json").read_text())
+    f["evidence"][0]["ledger_ref"] = f"eng/evidence/ledger.jsonl#{row['seq']}"
+    f["evidence"][0]["artifact_sha256"] = row["artifact_sha256"]
+    store.put_finding(f)
+    assert store.get_finding(f["finding_id"])["status"] == "confirmed"
+
+
+def test_store_refuses_mismatched_artifact_hash(store):
+    row = store.add_evidence(b"real evidence", actor="a", action="b")
+    f = json.loads((FIXTURES / "finding.json").read_text())
+    f["evidence"][0]["ledger_ref"] = f"x#{row['seq']}"
+    f["evidence"][0]["artifact_sha256"] = "f" * 64  # wrong hash
+    with pytest.raises(FindingStoreError):
+        store.put_finding(f)
+
+
+def test_store_fails_closed_without_jsonschema(store):
+    # jsonschema is now a hard import; simulate absence by nulling it in
+    # the module — create() must refuse, not degrade.
+    import findings_store as fs
+    real = fs.jsonschema
+    fs.jsonschema = None
+    try:
+        with pytest.raises(Exception):
+            fs.FindingStore.create(store.root.parent / "eng2",
+                                   json.loads((FIXTURES / "engagement.json").read_text()))
+    finally:
+        fs.jsonschema = real
+
+
+def test_authorization_window_enforced(tmp_path):
+    eng = json.loads((FIXTURES / "engagement.json").read_text())
+    eng["engagement_id"] = "expired-01"
+    eng["window"] = {"start": "2020-01-01T00:00:00Z",
+                     "expires": "2020-02-01T00:00:00Z"}
+    st = FindingStore.create(tmp_path / "expired", eng)
+    with pytest.raises(FindingStoreError, match="expired"):
+        st.add_evidence(b"x", actor="a", action="b")
+
+
+def test_authorization_status_enforced(tmp_path):
+    eng = json.loads((FIXTURES / "engagement.json").read_text())
+    eng["status"] = "paused"
+    st = FindingStore.create(tmp_path / "paused", eng)
+    with pytest.raises(FindingStoreError, match="paused"):
+        st.put_finding(json.loads((FIXTURES / "finding.json").read_text()))
+
+
+def test_checkpoint_detects_truncation(store):
+    for i in range(3):
+        store.add_evidence(f"evidence {i}".encode(), actor="a", action="b")
+    cp = store.checkpoint(label="off-box copy")   # copy this dict off-box
+    assert store.verify_against_checkpoint(cp["count"], cp["head"]) == []
+    # Truncate the ledger locally (rewrite + recompute is possible with
+    # filesystem access) — the EXTERNAL checkpoint still catches it.
+    lines = store.ledger.read_text().splitlines()
+    store.ledger.write_text("\n".join(lines[:2]) + "\n")
+    assert store.verify_against_checkpoint(cp["count"], cp["head"]) != []
+    # And the on-box checkpoint copy catches it too.
+    assert any("checkpoint" in x for x in store.verify_chain())
+
+
+def test_withdraw_preserves_audit_and_removes_content(store):
+    store.put_finding(seed_confirmed(store, json.loads((FIXTURES / "finding.json").read_text())))
+    tomb = store.withdraw_finding("dl-01-object-level-authz", actor="human",
+                                  reason="client PII in the record")
+    assert tomb["status"] == "withdrawn"
+    assert "Original record sha256:" in tomb["description"]
+    got = store.get_finding("dl-01-object-level-authz")
+    assert got["title"] == "[WITHDRAWN]"
+    assert got["description"].startswith("Withdrawn by human")
+    with pytest.raises(FindingStoreError):
+        store.withdraw_finding("dl-01-object-level-authz", actor="h", reason="again")
+
+
+def test_purge_artifact_keeps_chain_verifiable(store):
+    row = store.add_evidence(b"sensitive artifact bytes", actor="a", action="b")
+    assert store.verify_chain() == []
+    store.purge_artifact(row["artifact_sha256"], actor="human",
+                         reason="retention policy")
+    # Bytes gone, marker present, chain still verifies (recorded purge).
+    assert not (store.artifacts / row["artifact_sha256"] / "artifact.bin").exists()
+    assert (store.artifacts / row["artifact_sha256"] / "PURGED").exists()
+    assert store.verify_chain() == []
+
+
+def test_caido_body_redaction():
+    from caido_adapter import SanitizationPolicy, normalize_exchange
+    ex = {"id": "ex-2",
+          "request": {"method": "POST", "host": "t.lab", "path": "/login",
+                      "scheme": "https", "headers": {"Content-Type": "application/json"},
+                      "body": '{"username": "a", "password": "SuperSecret123!", "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"}'},
+          "response": {"status": 200, "headers": {}, "body": "ok sk-abcdefghijklmnopqrstuvwx"}}
+    obs = normalize_exchange(ex)
+    assert obs["sanitized"] is True
+    assert "SuperSecret123!" not in obs["request"]["body"]
+    assert "eyJhbGci" not in obs["request"]["body"]
+    assert "sk-abcdefghijklmnopqrstuvwx" not in obs["response"]["body"]
+    assert "credential" in obs["redactions"]
+    assert "jwt" in obs["redactions"]
+    assert "openai-key" in obs["redactions"]
+
+
+def test_caido_policy_extension():
+    from caido_adapter import SanitizationPolicy
+    pol = SanitizationPolicy().extend("internal-id", r"INT-\d{6}", "[REDACTED-INT]")
+    body, fired = pol.sanitize_body("customer INT-445566 called")
+    assert body == "customer [REDACTED-INT] called"
+    assert "internal-id" in fired
+    import re
+    with pytest.raises(Exception):
+        SanitizationPolicy(rules=[("bad", "not-a-pattern", "x")])

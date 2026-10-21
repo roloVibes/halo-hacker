@@ -7,16 +7,50 @@
     "signed_date": "2026-10-21"
   },
   "targets_file": "scope/targets.json",
-  "allowed_activities": ["read-only-analysis", "traffic-review", "code-review", "config-review", "low-impact-validation", "active-validation"],
-  "window": { "start": "2026-10-21T09:00:00Z", "expires": "2026-11-04T18:00:00Z" },
-  "test_accounts": [
-    { "account_id": "alice@test.lab", "role": "standard-user", "object_scope": ["obj-alice-*"] },
-    { "account_id": "bob@test.lab", "role": "standard-user", "object_scope": ["obj-bob-*"] }
+  "allowed_activities": [
+    "read-only-analysis",
+    "traffic-review",
+    "code-review",
+    "config-review",
+    "low-impact-validation",
+    "active-validation"
   ],
-  "rate_limits": { "max_requests_per_minute": 60, "max_concurrent_validations": 2 },
-  "required_approvals": ["active-validation", "disruptive-testing"],
-  "data_handling": { "locality": "on-box-only", "model_lanes": "local-models-only" },
+  "window": {
+    "start": "2026-10-20T09:00:00Z",
+    "expires": "2026-11-04T18:00:00Z"
+  },
+  "test_accounts": [
+    {
+      "account_id": "alice@test.lab",
+      "role": "standard-user",
+      "object_scope": [
+        "obj-alice-*"
+      ]
+    },
+    {
+      "account_id": "bob@test.lab",
+      "role": "standard-user",
+      "object_scope": [
+        "obj-bob-*"
+      ]
+    }
+  ],
+  "rate_limits": {
+    "max_requests_per_minute": 60,
+    "max_concurrent_validations": 2
+  },
+  "required_approvals": [
+    "active-validation",
+    "disruptive-testing"
+  ],
+  "data_handling": {
+    "locality": "on-box-only",
+    "model_lanes": "local-models-only"
+  },
   "reporting_destination": "engagement owner only (draft)",
-  "retention": { "audit_retention_days": 90, "evidence_retention_days": 90 },
+  "retention": {
+    "audit_retention_days": 90,
+    "evidence_retention_days": 90
+  },
   "status": "active"
 }
