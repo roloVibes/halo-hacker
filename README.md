@@ -190,10 +190,9 @@ human control and appropriate external safeguards.
 
 ## License
 
-A license has not yet been selected. The repository is currently private
-while the upstream Halo Harness extension interfaces land; visibility may
-change once a license is chosen. No open-source reuse rights are granted
-until then.
+A license has not yet been selected. The repository is public, but no
+open-source reuse rights are granted until a license is chosen — all rights
+reserved until then.
 
 ---
 
