@@ -1,13 +1,9 @@
 # Halo Hacker — capability pack manifest for Halo Harness.
 #
-# Contract: Halo 3.2.0.0 R1 "Packs" (plans/ROADMAP.md, added 2026-10-21).
-# The pack registry does not exist in any released Halo yet (see
-# CORE_REQUESTS.md CR-1); this manifest follows the documented contract so
-# it validates the day `halo pack install` lands. Until then,
-# scripts/install-compat.sh is the ONLY supported install path (a clearly
-# identified temporary compatibility adapter, never a core patch).
+# Contract: Halo 3.2.0.0 R1 "Packs" (plans/ROADMAP.md; docs/EXTENSION_API.md).
+# Validated against the shipped `halo pack` implementation (Halo 3.2.1.0).
+# The compat adapter still supports 3.0.x-3.1.x manually -- see COMPATIBILITY.md.
 id: halo-hacker
-namespace: hh
 name: Halo Hacker
 version: 0.4.0
 description: >-
@@ -16,42 +12,38 @@ description: >-
   finding schemas, and evidence-driven reporting. Adds security assessment
   to Halo; owns no runtime, routing, or orchestration of its own.
 author: rolo (roloVibes)
-license: TBD (repo public 2026-10-21; license decision pending — all rights reserved until then)
+license: TBD (license decision pending — all rights reserved until then)
 halo_api:
-  # First Halo version with the pack registry (3.2.0.0 R1). The compat
-  # adapter additionally supports 3.0.x-3.1.x manually -- see COMPATIBILITY.md.
+  # The extension API version (halo_harness.ext.API_VERSION), not the Halo
+  # version; Halo 3.2.0.0 shipped extension API 1.0 with the pack registry.
+  min: "1.0"
+halo:
+  # First Halo version with the pack registry (3.2.0.0 R1).
   min: 3.2.0.0
-  max: ""
 capabilities:
   - agents        # 8 role bios contributed to the bio registry
   - teams         # 5 lineup templates contributed to the template registry
-  - schemas       # engagement / scope / finding / playbook JSON Schemas
+  - schemas       # engagement / scope / finding / playbook JSON Schemas (pack data files)
   - policies      # engagement + broker policy definitions (docs + schemas)
   - playbooks     # declarative testing workflows (catalog: see PLAYBOOK_CATALOG.md)
 requires: []      # no hard pack dependencies
-contributions:
+contributes:
   agents:
-    path: agents/
-    count: 8
+    - agents/hh-ai-security-tester.yaml
+    - agents/hh-api-tester.yaml
+    - agents/hh-judge.yaml
+    - agents/hh-orchestrator.yaml
+    - agents/hh-recon.yaml
+    - agents/hh-reporter.yaml
+    - agents/hh-validator.yaml
+    - agents/hh-web-tester.yaml
   teams:
-    path: teams/
-    count: 5
-  schemas:
-    path: schemas/
-    artifacts: [engagement, scope-targets, finding, playbook]
-  policies:
-    path: policies/
-  playbooks:
-    path: playbooks/
-    count: 16
-  skills:
-    path: skills/
-    count: 0       # populated with methodology content in Milestone 2
-  studio: []       # blocked on CORE_REQUESTS.md CR-2 (contribution registry)
-  fleet: []        # blocked on CORE_REQUESTS.md CR-3 (fleet capabilities)
-  artifacts: []    # Milestone 4 (typed report artifact)
-  events: []       # Milestone 4
-  config_schema: {}
-permissions:
-  requested: []    # none at 0.1.0: bios are data only; no tool grants
+    - teams/hh-ai-security-review.yaml
+    - teams/hh-api-security-review.yaml
+    - teams/hh-cloud-config-assessment.yaml
+    - teams/hh-finding-validation-reporting.yaml
+    - teams/hh-web-app-assessment.yaml
+  # schemas/, policies/ and playbooks/ are pack data files (read by the pack's
+  # own tooling and referenced from the bios), not registry contributions.
+permissions: []   # none: bios and data only; no tool grants
 migrations: []

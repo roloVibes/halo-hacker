@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 """Halo Hacker pack validator.
 
-Validates the pack against (a) the Halo 3.2.0.0 R1 pack.yaml contract as
-documented in the harness roadmap and (b) the Halo agent-bio / team-template
-YAML grammar as implemented in halo_harness/agents_yaml.py +
-teams_yaml.py (mirrored here field-for-field so validation works without a
-harness checkout; tests/test_pack.py ALSO runs the real harness validators
-against this pack when a checkout exists).
+Validates the pack against (a) the shipped pack.yaml contract (Halo 3.2.0.0+
+packs program, verified 2026-10-25 against halo 3.2.1.0 /
+halo_harness/packs/manifest.py + schema/pack.schema.json) and (b) the Halo
+agent-bio / team-template YAML grammar as implemented in
+halo_harness/agents_yaml.py + teams_yaml.py (mirrored here field-for-field
+so validation works without a harness checkout; tests/test_pack.py ALSO runs
+the real harness validators against this pack when a checkout exists).
+
+Manifest contract notes (as shipped, not the pre-release roadmap draft):
+- no `namespace` key: nothing in Halo reads it.
+- `contributes` (not `contributions`): agents/teams are LISTS of file paths
+  ("agents/<name>.yaml"), not {path, count} mappings.
+- `halo_api` is the EXTENSION API version (halo_harness.ext.API_VERSION,
+  "1.0" in Halo 3.2.0.0) -- a two-part semver, not a Halo four-part version.
+- `permissions` is a flat list of strings, not {requested: [...]}.
 
 Exit code is the gate: 0 = valid, 1 = any problem (one plain line each).
 """
@@ -21,9 +30,9 @@ import yaml
 
 PACK_ROOT = Path(__file__).resolve().parent.parent
 
-MANIFEST_REQUIRED = ("id", "namespace", "name", "version", "description",
+MANIFEST_REQUIRED = ("id", "name", "version", "description",
                      "author", "license", "halo_api", "capabilities",
-                     "requires", "contributions")
+                     "requires", "contributes")
 # Mirrored from halo_harness/agents_yaml.py (verified 2026-10-21 against
 # master 90cd137).
 BIO_SECTIONS = ("models", "tools", "context", "limits", "output",
@@ -71,15 +80,16 @@ def validate_manifest() -> dict | None:
     if not isinstance(halo_api, dict) or "min" not in halo_api:
         p("pack.yaml: halo_api must be a mapping with at least 'min'")
     else:
-        if not re.match(r"^\d+\.\d+\.\d+\.\d+$", str(halo_api.get("min", ""))):
-            p("pack.yaml: halo_api.min must be a Halo four-part version")
+        # Extension API version (halo_harness.ext.API_VERSION), e.g. "1.0".
+        if not re.match(r"^\d+\.\d+$", str(halo_api.get("min", ""))):
+            p("pack.yaml: halo_api.min must be an extension-API version (e.g. 1.0)")
         mx = halo_api.get("max", "")
-        if mx and not re.match(r"^\d+\.\d+\.\d+\.\d+$", str(mx)):
-            p("pack.yaml: halo_api.max must be a four-part version or empty")
+        if mx and not re.match(r"^\d+\.\d+$", str(mx)):
+            p("pack.yaml: halo_api.max must be an extension-API version or empty")
+    if "namespace" in m:
+        p("pack.yaml: 'namespace' is not part of the shipped contract; nothing reads it")
     if m.get("id") != "halo-hacker":
         p("pack.yaml: id must be 'halo-hacker'")
-    if m.get("namespace") != "hh":
-        p("pack.yaml: namespace must be 'hh'")
     return m
 
 
@@ -220,19 +230,22 @@ def main() -> int:
         except json.JSONDecodeError as e:
             p(f"{path.name}: invalid JSON: {e}")
 
-    # Manifest contribution counts must match reality (prove the filter
-    # counted something: N-before -> M-after).
+    # Manifest contributes lists must match reality: every listed file exists,
+    # every file on disk is listed (N-before -> M-after, both directions).
     if manifest:
-        c = manifest.get("contributions") or {}
-        agents_c = c.get("agents") or {}
-        if agents_c.get("count") != len(bios):
-            p(f"pack.yaml: contributions.agents.count {agents_c.get('count')} != {len(bios)} bio files found")
-        teams_c = c.get("teams") or {}
-        if teams_c.get("count") != len(teams):
-            p(f"pack.yaml: contributions.teams.count {teams_c.get('count')} != {len(teams)} team files found")
-        pb_c = c.get("playbooks") or {}
-        if pb_c.get("count", 0) != pb_count:
-            p(f"pack.yaml: contributions.playbooks.count {pb_c.get('count')} != {pb_count} playbook files found")
+        c = manifest.get("contributes") or {}
+        for kind, found in (("agents", bios), ("teams", teams)):
+            listed = c.get(kind) if isinstance(c.get(kind), list) else []
+            for rel in listed:
+                if not (PACK_ROOT / rel).is_file():
+                    p(f"pack.yaml: contributes.{kind}: {rel} is not in the pack")
+            disk = {f"{kind}/{f.name}" for f in found}
+            missing = sorted(disk - set(listed))
+            if missing:
+                p(f"pack.yaml: contributes.{kind} is missing: {', '.join(missing)}")
+            extra = sorted(set(listed) - disk)
+            if extra:
+                p(f"pack.yaml: contributes.{kind} lists files not on disk: {', '.join(extra)}")
 
     print(f"validated: {len(bios)} bios, {len(teams)} teams, {pb_count} playbooks, "
           f"{len(list(schema_dir.glob('*.json')))} schemas")

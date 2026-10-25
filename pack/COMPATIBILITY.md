@@ -4,10 +4,10 @@
 
 | Halo version | Support | Path |
 |---|---|---|
-| 3.0.x – 3.1.x (released) | Compat adapter only | `scripts/install-compat.sh` — bios/teams through `~/.halo/agents|teams/` |
-| 3.2.0.0+ (pack registry, unreleased) | Native target | `halo pack install <this-dir>` once R1 ships |
+| 3.0.x – 3.1.x (released) | Compat adapter only | `pack/scripts/install-compat.sh` — bios/teams through `~/.halo/agents|teams/` |
+| 3.2.0.0+ (pack registry, RELEASED, shipped through 3.2.1.0) | Native target | `halo pack install <this-dir>` — validated 2026-10-25 against halo 3.2.1.0: `problems: none`, installs clean, 8 bios + 5 lineups offered |
 
-## Interfaces the pack depends on (all verified against master @ 90cd137)
+## Interfaces the pack depends on (pack contract verified 2026-10-25 against halo 3.2.1.0 @ a7b2c15; bio/team grammar originally verified against master @ 90cd137)
 
 | Interface | Where | Status | Pack use |
 |---|---|---|---|
