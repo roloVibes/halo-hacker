@@ -11,8 +11,8 @@ description: >-
   assessment team lineups, structured playbooks, engagement scope policy,
   finding schemas, and evidence-driven reporting. Adds security assessment
   to Halo; owns no runtime, routing, or orchestration of its own.
-author: rolo (roloVibes)
-license: TBD (license decision pending — all rights reserved until then)
+author: Pinball Genie LLC (github.com/roloVibes)
+license: All rights reserved — Pinball Genie LLC (see /LICENSE)
 halo_api:
   # The extension API version (halo_harness.ext.API_VERSION), not the Halo
   # version; Halo 3.2.0.0 shipped extension API 1.0 with the pack registry.

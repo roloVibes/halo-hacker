@@ -190,9 +190,9 @@ human control and appropriate external safeguards.
 
 ## License
 
-A license has not yet been selected. The repository is public, but no
-open-source reuse rights are granted until a license is chosen — all rights
-reserved until then.
+Copyright © 2026 **Pinball Genie LLC**. All rights reserved — no open-source
+reuse rights are granted. See `/LICENSE`. Pinball Genie LLC is the holding
+entity for all of roloVibes' development projects.
 
 ---
 
