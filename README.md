@@ -31,38 +31,11 @@ finding someone else can verify.
 | **Scanner normalizers** (`pack/tools/normalizers.py`) | Nuclei and Semgrep output → schema-valid **candidate** findings — scanner output is a candidate, never a confirmation. |
 | **Knowledge ingestion** (`pack/ingest/`, `pack/mcp/ingest_server.py`) | The ingestion MCP server (declared in `pack/.mcp.json`, granted with `mcp:ingest`) plus the headless CLI (`pack/cli.py`): local notes/Obsidian vaults, PDFs, GitHub files, YouTube subtitles → classify → distill → gated upsert into a provenance-ledger KB. Local model lane by default; hosted is explicit opt-in. |
 
-## A security team, not a single prompt
+## What you supply — never bundled
 
-A useful assessment takes different kinds of thinking. Mapping an
-application is different from evaluating an authorization boundary.
-Reproducing a finding is different from reviewing its evidence. Writing a
-clear report is another skill entirely. halo-hacker divides that work
-among specialized agents:
-
-| Agent | Responsibility |
-|---|---|
-| Orchestrator | Plans the engagement and coordinates the work |
-| Recon | Builds an understanding of the approved attack surface |
-| Web Tester | Applies web application assessment playbooks |
-| API Tester | Reviews API behavior, access controls, and input handling |
-| AI Security Tester | Evaluates AI application boundaries and integrations |
-| Validator | Independently checks suspected findings |
-| Judge | Reviews evidence, confidence, and duplicates |
-| Reporter | Turns confirmed findings into reviewable draft reports |
-
-Halo Harness supplies the runtime, model routing, delegation, sessions,
-and tools; the roles are model-agnostic, so the team does not depend on
-any single provider. The intended workflow:
-**Discover → Investigate → Validate → Review → Report** — a tester
-proposes a candidate, a validator checks it independently, a judge
-examines the evidence, and a reporter produces a draft a human reviews
-before submission.
-
-## The vault: yours, never shipped
-
-The ingestion engine writes into a knowledge base you point it at — the
-pack ships no corpus, no notes, no findings. Until a vault is set, every
-ingestion tool refuses (the vault guard):
+The knowledge base is yours; the pack ships no corpus, no notes, no
+findings. Until a vault is set, every ingestion tool refuses (the vault
+guard):
 
 ```bash
 halo config set packs.settings.halo-hacker.vault <path-to-your-kb>
@@ -88,16 +61,15 @@ the MCP server itself is standard-library-only (no MCP SDK — the SDK's
 
 ## Status
 
-0.5.0 — validated against the shipped `halo pack` implementation:
-`halo pack inspect` reports `problems: none` (halo 3.2.1.0, 2026-10-25;
-halo 3.3.2.0, 2026-10-27). The ingestion MCP server is smoke-tested
-end-to-end over stdio JSON-RPC (initialize + tools/list + vault guard).
-The role and team compatibility path is implemented, but a complete live
-assessment running through Halo has not yet been demonstrated in the
-published test results. See
-[pack/IMPLEMENTATION_STATUS.md](pack/IMPLEMENTATION_STATUS.md),
+0.5.0 — `halo pack inspect` reports `problems: none` (validated against
+halo 3.2.1.0 on 2026-10-25 and halo 3.3.2.0 on 2026-10-27). The
+ingestion MCP server is smoke-tested end-to-end over stdio JSON-RPC
+(initialize + tools/list + vault guard). The role and team paths are
+implemented, but a complete live assessment running through Halo has not
+yet been demonstrated in the published test results. See
+[pack/docs/IMPLEMENTATION_STATUS.md](pack/docs/IMPLEMENTATION_STATUS.md),
 [pack/COMPATIBILITY.md](pack/COMPATIBILITY.md), and
-[pack/TEST_RESULTS.md](pack/TEST_RESULTS.md).
+[pack/docs/TEST_RESULTS.md](pack/docs/TEST_RESULTS.md).
 
 ## License
 
@@ -111,6 +83,25 @@ is the holding entity for all of roloVibes' development projects.
 
 *The sections below are the substance behind the pitch above: how the
 pieces actually work, with the real schemas and code paths.*
+
+## The team, not a single prompt
+
+A useful assessment takes different kinds of thinking. Mapping an
+application is different from evaluating an authorization boundary.
+Reproducing a finding is different from reviewing its evidence. Writing a
+clear report is another skill entirely. halo-hacker divides that work
+among specialized agents:
+
+| Agent | Responsibility |
+|---|---|
+| Orchestrator | Plans the engagement and coordinates the work |
+| Recon | Builds an understanding of the approved attack surface |
+| Web Tester | Applies web application assessment playbooks |
+| API Tester | Reviews API behavior, access controls, and input handling |
+| AI Security Tester | Evaluates AI application boundaries and integrations |
+| Validator | Independently checks suspected findings |
+| Judge | Reviews evidence, confidence, and duplicates |
+| Reporter | Turns confirmed findings into reviewable draft reports |
 
 ## How an assessment runs
 
@@ -135,7 +126,11 @@ an engagement (signed scope) ──▶ playbooks execute ──▶ candidates
    (`pack/schemas/engagement.schema.json`).
 3. The orchestrator decomposes the engagement into **playbook** tasks and
    delegates each to the right specialist role.
-4. Testers produce **candidate findings** — never confirmed ones.
+4. Testers produce **candidate findings** — never confirmed ones. The
+   workflow is **Discover → Investigate → Validate → Review → Report**:
+   a tester proposes a candidate, a validator checks it independently, a
+   judge examines the evidence, and a reporter produces a draft a human
+   reviews before submission.
 
 ## Agent bios: the real grammar
 
@@ -255,11 +250,12 @@ candidates.
 > knowledge → **halo-hacker**.
 
 Upstream gaps this pack depends on are tracked with rationale and interim
-workarounds in [pack/CORE_REQUESTS.md](pack/CORE_REQUESTS.md): the pack
-registry (CR-1 — SHIPPED in halo 3.2.0.0), Studio contribution registry
-(CR-2), fleet capabilities (CR-3), the tool-action broker hook (CR-4), the
-persistent supervisor (CR-5), a documented Caido interface (CR-6). Nothing
-is hacked around with private APIs, and no Halo file is patched.
+workarounds in [pack/docs/CORE_REQUESTS.md](pack/docs/CORE_REQUESTS.md):
+the pack registry (CR-1 — SHIPPED in halo 3.2.0.0), Studio contribution
+registry (CR-2), fleet capabilities (CR-3), the tool-action broker hook
+(CR-4), the persistent supervisor (CR-5), a documented Caido interface
+(CR-6). Nothing is hacked around with private APIs, and no Halo file is
+patched.
 
 ## What's next
 

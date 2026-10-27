@@ -33,7 +33,7 @@ halo-hacker/                      (repo; everything the pack ships lives in pack
   + finding schemas, evidence/reporting workflows, tool adapters (M3).
 - **Borrows from Halo (never duplicated):** model routing, agent runtime,
   delegation/teams, permissions, Studio, memory, budgets, cost tracking.
-- **Boundary rule** (halo-hacker PLAN.md, 2026-10-04): bytes that cross
+- **Boundary rule** (halo-hacker _research/PLAN.md, 2026-10-04): bytes that cross
   machines or gate boundaries = harness; what the agent knows/does with
   knowledge = this pack. The pack contains no runtime of its own.
 

@@ -2,7 +2,7 @@
 
 Same library as the MCP server, same guards. What it LACKS is halo's pillar-1
 rerouting: if the local model filters or fails, this refuses and reports rather
-than rerouting and filing. That asymmetry is deliberate — see PLAN.md.
+than rerouting and filing. That asymmetry is deliberate — see _research/PLAN.md in the repo.
 
 Usage:
   python pack/cli.py notes  <dir>   [--dry-run] [--vault <path>]

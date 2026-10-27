@@ -13,10 +13,10 @@ Scope of this module (deliberately narrow):
 
 STATUS: DRAFT. The request/response shapes against a LIVE Caido instance
 are NOT yet verified (no instance reachable at build time — see
-INTEGRATION_STATUS.md). The offline fixtures in tests/ pin the
+docs/INTEGRATION_STATUS.md). The offline fixtures in tests/ pin the
 normalization; the transport layer must be verified live before any
 non-draft use. Prefers a documented MCP interface when one exists
-(CORE_REQUESTS.md CR-6 notes the gap).
+(docs/CORE_REQUESTS.md CR-6 notes the gap).
 """
 from __future__ import annotations
 

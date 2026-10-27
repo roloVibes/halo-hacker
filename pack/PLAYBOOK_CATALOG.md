@@ -25,4 +25,4 @@ Below: the shipped catalog. Every playbook is model-independent (enforced by tes
 Rules already fixed by the schema: playbooks never name models or
 providers; stages are ordered with rising impact; any stage above
 `low-impact` defaults to `requires_approval: true` at authoring time
-(pending CORE_REQUESTS CR-4 for mechanical enforcement).
+(pending docs/CORE_REQUESTS CR-4 for mechanical enforcement).
