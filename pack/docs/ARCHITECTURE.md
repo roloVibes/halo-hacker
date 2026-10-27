@@ -1,11 +1,20 @@
 # Halo Hacker pack — architecture
 
 ```
-halo-hacker/                      (repo; the ingestion engine is untouched)
-  pack/                           THE PACK (this directory)
+halo-hacker/                      (repo; everything the pack ships lives in pack/)
+  pack/                           THE PACK (this directory — what `halo pack install` copies)
     pack.yaml                     manifest — Halo 3.2.0.0 R1 contract
+    .mcp.json                     declares the ingestion MCP server (mcp/ingest_server.py)
     agents/     hh-*.yaml         8 role bios: Halo bio grammar + hh: block
     teams/      hh-*.yaml         5 lineups assigning bios to roles
+    ingest/                       the knowledge ingestion library (no policy of its own)
+      adapters.py                 notes / PDF (pymupdf) / GitHub / YouTube (yt-dlp) → Documents
+      pipeline.py                 privacy filter (proves drops) → classify → distill → gated upsert
+      store.py                    provenance ledger, NO DELETE VERB, refusal-biased upsert
+      model_client.py             Ollama /api/chat (num_ctx + prompt_eval_count canary); OpenRouter hosted lane
+      tools.py                    the 5 ingestion tools — shared by the MCP server and the CLI
+    mcp/ingest_server.py          stdio JSON-RPC server (stdlib only, no MCP SDK); --selftest asserts the vault guard
+    cli.py                        headless entry — same library, same guards; exit-code gated
     skills/     (M2)              methodology micro-skills
     playbooks/  (M2)              declarative workflows (playbook.schema)
     policies/                     engagement + broker policy definitions
@@ -15,8 +24,7 @@ halo-hacker/                      (repo; the ingestion engine is untouched)
     examples/   (M12)             controlled demo fixtures
     schemas/                      engagement / scope / finding / playbook
     tools/validate_pack.py        exit-code-gated validator
-    tests/test_pack.py            grammar, negatives, REAL-harness pin
-    scripts/install-compat.sh     pre-3.2.0.0 adapter (stable user dirs)
+    tests/                        test_pack (grammar, negatives, REAL-harness pin), test_ingest, test_m3_m4
 ```
 
 ## What the pack owns vs borrows

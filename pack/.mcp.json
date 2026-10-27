@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ingest": {
+      "command": "${halo_python}",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/ingest_server.py"],
+      "env": {
+        "HALO_HACKER_PACK_ID": "halo-hacker"
+      }
+    }
+  }
+}

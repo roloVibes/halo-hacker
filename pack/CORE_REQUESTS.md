@@ -3,23 +3,20 @@
 Audited against Halo-Harness master @ 90cd137 (fetched 2026-10-21; the
 local clone had been 444 commits behind before fetch). Each request cites
 where the roadmap already promises it. Nothing here is implemented by
-patching Halo internals; until a request ships, the pack either ships a
-clearly-labeled compatibility adapter or stays without that surface.
+patching Halo internals; until a request ships, the pack stays without
+that surface.
 
 ## CR-1 — The pack registry (`halo pack install|list|enable|…`)
 
-- **Status:** ROADMAP ONLY — 3.2.0.0 R1 (plans/ROADMAP.md, added
-  2026-10-21). No `halo_harness/ext/`, no `pack.yaml` loader, no pack CLI
-  exists in any released Halo (current unreleased: 3.1.7.0).
+- **Status:** SHIPPED — halo 3.2.0.0 R1 (validated against the shipped
+  `halo pack` implementation in 3.2.1.0 on 2026-10-25; current halo runs
+  the full lifecycle: install/enable/grant/update/rollback/remove).
 - **Needed by:** the entire install/enable/disable/remove lifecycle.
-- **Adapter shipped:** `scripts/install-compat.sh` /
-  `uninstall-compat.sh` install the pack's bios/teams through the stable
-  user directories (`~/.halo/agents/`, `~/.halo/teams/`), which all Halo
-  surfaces (wizard Team step, `halo agents|teams`, Studio Roles) read
-  natively. Namespaced `<pack>/<name>` ids degrade to `hh-` filename
-  prefixes.
-- **Removal condition:** delete both adapters the day `halo pack install`
-  ships; `pack.yaml` already follows the R1 contract.
+- **Pack state:** native install is the only path
+  (`halo pack install <repo>/pack`); the pre-3.2.0.0 compatibility adapter
+  (`pack/scripts/install-compat.sh`) was REMOVED 2026-10-27 per its own
+  removal condition — the manifest's floor (halo ≥ 3.2.0.0) already
+  excluded the versions it served.
 
 ## CR-2 — Studio contribution registry
 

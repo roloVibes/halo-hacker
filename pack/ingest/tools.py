@@ -1,22 +1,33 @@
-"""halo-hacker MCP server — the in-session surface (primary mode).
+"""The five ingestion tools — shared by the MCP server and the CLI.
 
-Tools: ingest_notes, ingest_pdf, ingest_github, ingest_youtube, ingest_status.
-Runs the same library the CLI uses; no policy of its own. Launched inside a halo
-session it inherits the harness's lanes/governor; standalone it still works but
-must be pointed at a local model.
+No policy of its own: the library's guards (privacy filter, trust tiers,
+no-delete store, refusal-biased upserts) are the policy. Launched inside a
+halo session the server inherits the harness's lanes/governor; standalone
+it still works but must be pointed at a local model.
 """
 
 from __future__ import annotations
 
-import json
 import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from ingest import adapters, pipeline
-from ingest.model_client import OllamaClient, OpenRouterClient, ModelError
+from ingest.model_client import OllamaClient, OpenRouterClient
 from ingest.store import Store
+
+
+def _config_str(key: str, default: str = "") -> str:
+    """Read a pack setting through Halo's extension API when available.
+
+    The server normally runs under Halo (PYTHONPATH carries halo_harness);
+    standalone (tests, manual runs) falls back to the default.
+    """
+    try:
+        from halo_harness.ext import get_config  # type: ignore
+
+        value = get_config("halo-hacker", key, default)
+        return str(value) if value else default
+    except Exception:
+        return default
 
 
 def _client():
@@ -27,10 +38,17 @@ def _client():
     return OllamaClient()
 
 
-def _store() -> Store:
-    vault = os.environ.get("HALO_HACKER_VAULT")
+def _vault_root() -> str:
+    """Where the knowledge base lives: env var first (explicit per-launch
+    override), then the pack's `vault` config key (halo config set
+    packs.settings.halo-hacker.vault <path>), else empty = refuse."""
+    return os.environ.get("HALO_HACKER_VAULT") or _config_str("vault")
+
+
+def _store():
+    vault = _vault_root()
     if not vault:
-        return {"ok": False, "error": "HALO_HACKER_VAULT not set — point it at your vault root"}
+        return {"ok": False, "error": "no vault set — set HALO_HACKER_VAULT or `halo config set packs.settings.halo-hacker.vault <path>`"}
     return Store(vault)
 
 
@@ -107,30 +125,3 @@ def ingest_status() -> dict:
 
 
 TOOLS = (ingest_notes, ingest_pdf, ingest_github, ingest_youtube, ingest_status)
-
-
-def main() -> int:
-    if "--selftest" in sys.argv:
-        # No-network sanity: imports resolve and the VAULT GUARD fires on every
-        # tool when HALO_HACKER_VAULT is unset (refuse-before-touching-anything).
-        for fn, arg in [(ingest_notes, "/nonexistent"), (ingest_pdf, "/nonexistent.pdf"),
-                        (ingest_github, "https://github.com/x/y/blob/main/z.md"),
-                        (ingest_youtube, "https://youtu.be/x"), (ingest_status, None)]:
-            r = fn(arg) if arg is not None else fn()
-            assert r.get("ok") is False and "HALO_HACKER_VAULT" in r.get("error", ""), (fn, r)
-        print("halo-hacker selftest OK — 5 tools, vault guard fires on all of them")
-        return 0
-    try:
-        from mcp.server.fastmcp import FastMCP
-    except ImportError:
-        print("MCP SDK not installed: uv pip install 'mcp>=1,<2'", file=sys.stderr)
-        return 1
-    mcp = FastMCP("halo-hacker")
-    for fn in TOOLS:
-        mcp.tool()(fn)
-    mcp.run()
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

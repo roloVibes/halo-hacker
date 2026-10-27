@@ -98,9 +98,9 @@ Two sources, one pipeline: **local notes** (Obsidian/Notion/markdown adapters) a
 ## Architecture — in-session primary, headless degraded, never a second runtime
 
 ```
-halo-hacker/
+halo-hacker/pack/                 # everything the pack ships lives here (2026-10-27)
   ingest/          # the library: scan, filter, classify, distill, upsert — no policy of its own
-  mcp_server.py    # in-session surface (primary mode): tools the agent calls
+  mcp/ingest_server.py  # in-session surface (primary mode): tools the agent calls
   cli.py           # headless entry — same library, same guards; refuses filtered content
                    # rather than filing it (it lacks P1's rerouting)
 ```
@@ -182,9 +182,9 @@ engine untouched) lives at `pack/`:
 - `pack/teams/` — 5 lineups (web, api, ai, cloud, validation+reporting)
 - `pack/schemas/` — engagement / scope-targets / finding / playbook
   JSON Schemas (lifted from halo-harness-cyber/ENGAGEMENT-MODEL.md)
-- `pack/scripts/install-compat.sh` — pre-3.2.0.0 adapter: installs
-  bios/teams into `~/.halo/agents|teams/` (stable, documented surface;
-  no core patches). Proven end-to-end in a sandbox HOME.
+- `pack/scripts/install-compat.sh` — pre-3.2.0.0 adapter: REMOVED
+  2026-10-27 (CR-1 shipped in halo 3.2.0.0; `halo pack install` is the
+  only install path — the manifest floor already excluded pre-3.2.0.0).
 - `pack/tests/` — 14/14 green incl. the real-harness validator pin;
   validator exit-code gated. Details: `pack/TEST_RESULTS.md`
 - Tracking: `pack/{CORE_REQUESTS,COMPATIBILITY,IMPLEMENTATION_STATUS,PLAYBOOK_CATALOG,INTEGRATION_STATUS,TEST_RESULTS}.md`
@@ -193,6 +193,10 @@ Next: Milestone 2 (playbooks + controlled fixtures) per
 `pack/IMPLEMENTATION_STATUS.md`.
 
 ## Status — v0.1 (2026-10-04)
+
+*(paths below are the v0.1 layout; the engine moved into `pack/` on
+2026-10-27 so `halo pack install` ships it — see the architecture tree
+above)*
 
 ```
 halo-hacker/

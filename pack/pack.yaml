@@ -2,10 +2,9 @@
 #
 # Contract: Halo 3.2.0.0 R1 "Packs" (plans/ROADMAP.md; docs/EXTENSION_API.md).
 # Validated against the shipped `halo pack` implementation (Halo 3.2.1.0).
-# The compat adapter still supports 3.0.x-3.1.x manually -- see COMPATIBILITY.md.
 id: halo-hacker
 name: Halo Hacker
-version: 0.4.0
+version: 0.5.0
 description: >-
   Authorized security assessment capability pack: specialized agent roles,
   assessment team lineups, structured playbooks, engagement scope policy,
@@ -26,6 +25,7 @@ capabilities:
   - schemas       # engagement / scope / finding / playbook JSON Schemas (pack data files)
   - policies      # engagement + broker policy definitions (docs + schemas)
   - playbooks     # declarative testing workflows (catalog: see PLAYBOOK_CATALOG.md)
+  - ingestion     # the pack's own knowledge ingestion MCP server (mcp/ingest_server.py)
 requires: []      # no hard pack dependencies
 contributes:
   agents:
@@ -43,7 +43,18 @@ contributes:
     - teams/hh-cloud-config-assessment.yaml
     - teams/hh-finding-validation-reporting.yaml
     - teams/hh-web-app-assessment.yaml
+  mcp:
+    - {name: ingest, description: knowledge ingestion into the provenance-ledger KB (local notes, PDFs, GitHub files, YouTube subtitles)}
   # schemas/, policies/ and playbooks/ are pack data files (read by the pack's
   # own tooling and referenced from the bios), not registry contributions.
-permissions: []   # none: bios and data only; no tool grants
+permissions:
+  - mcp:ingest    # the knowledge ingestion server (mcp/ingest_server.py)
+config:
+  schema:
+    properties:
+      vault:
+        {type: string, description: "Where the knowledge base lives (the folder the provenance ledger and distilled entries are written under). When empty the server refuses every tool; set it with `halo config set packs.settings.halo-hacker.vault <path>` or the HALO_HACKER_VAULT env var."}
+    additionalProperties: false
+  defaults:
+    vault: ""
 migrations: []

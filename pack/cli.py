@@ -5,11 +5,11 @@ rerouting: if the local model filters or fails, this refuses and reports rather
 than rerouting and filing. That asymmetry is deliberate — see PLAN.md.
 
 Usage:
-  python cli.py notes  <dir>   [--dry-run] [--vault <path>]
-  python cli.py pdf    <file>  [--vault <path>]
-  python cli.py github <url>   [--vault <path>]
-  python cli.py youtube <url>  [--vault <path>]
-  python cli.py status         [--vault <path>]
+  python pack/cli.py notes  <dir>   [--dry-run] [--vault <path>]
+  python pack/cli.py pdf    <file>  [--vault <path>]
+  python pack/cli.py github <url>   [--vault <path>]
+  python pack/cli.py youtube <url>  [--vault <path>]
+  python pack/cli.py status         [--vault <path>]
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import mcp_server
+from ingest import tools
 
 
 def main() -> int:
@@ -47,15 +47,15 @@ def main() -> int:
         if not args:
             print("notes needs a directory", file=sys.stderr)
             return 2
-        report = mcp_server.ingest_notes(args[0], dry_run=dry_run)
+        report = tools.ingest_notes(args[0], dry_run=dry_run)
     elif cmd == "pdf":
-        report = mcp_server.ingest_pdf(args[0])
+        report = tools.ingest_pdf(args[0])
     elif cmd == "github":
-        report = mcp_server.ingest_github(args[0])
+        report = tools.ingest_github(args[0])
     elif cmd == "youtube":
-        report = mcp_server.ingest_youtube(args[0])
+        report = tools.ingest_youtube(args[0])
     elif cmd == "status":
-        report = mcp_server.ingest_status()
+        report = tools.ingest_status()
     else:
         print(f"unknown command: {cmd}", file=sys.stderr)
         print(__doc__)

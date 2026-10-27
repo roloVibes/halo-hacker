@@ -16,7 +16,8 @@
 - [x] `tools/validate_pack.py` — exit-code-gated validator
 - [x] `tests/test_pack.py` — grammar + negative cases + REAL-harness
       validator pin
-- [x] Compat install/uninstall adapter (pre-3.2.0.0)
+- [x] Compat install/uninstall adapter (pre-3.2.0.0) — REMOVED 2026-10-27:
+      CR-1 shipped in halo 3.2.0.0; native install is the only path
 - [x] Tracking docs: CORE_REQUESTS, COMPATIBILITY, PLAYBOOK_CATALOG,
       INTEGRATION_STATUS, TEST_RESULTS
 
@@ -52,7 +53,7 @@ separation. 50 pack + 20 ingest tests green (TEST_RESULTS.md).
 - [x] Ingestion bridge: deferred to the Obsidian-knowledge integration
       round (the engine is in this repo; the pack-side skill + MCP wiring
       needs the engagement context layer first)
-- [ ] Obsidian knowledge retrieval (bridges `ingest/`), Garak/PyRIT
+- [ ] Obsidian knowledge retrieval (bridges `pack/ingest/`), Garak/PyRIT
       adapters, report destinations (PlexTrac/HackerOne/Jira) — next
 
 Caido adapter (prefer a documented MCP; custom adapter only for gaps),
@@ -83,9 +84,18 @@ engagement tree (schema shipped); duplicate detection; report generation.
 ## Decisions
 
 - 2026-10-21: pack lives at `pack/` inside the halo-hacker repo. The
-  ingestion engine (`ingest/`, `mcp_server.py`, `cli.py`) is untouched —
-  the pack ADDS to the project per the owner's instruction; ingestion
-  becomes the Phase 6 "knowledge systems" integration later.
+  ingestion engine stays a library the pack consumes — the pack ADDS to
+  the project per the owner's instruction; ingestion becomes the Phase 6
+  "knowledge systems" integration later.
+- 2026-10-27: the ingestion engine moved INSIDE `pack/`
+  (`pack/ingest/`, `pack/mcp/ingest_server.py`, `pack/cli.py`) so
+  `halo pack install` ships the whole engine — the installed pack is
+  self-contained, same as halo-re. The MCP server is declared in
+  `pack/.mcp.json` (permission `mcp:ingest`, settings key `vault`) and
+  is a hand-rolled stdio JSON-RPC server with no MCP SDK dependency
+  (the SDK's 1.x→2.x `FastMCP` rename broke pack servers under halo
+  3.3.x). The pre-3.2.0.0 compat installer was REMOVED (CR-1 shipped;
+  the manifest floor already excluded those versions).
 - 2026-10-21: security-specific role fields ride under a top-level `hh:`
   key (verified the Halo loader tolerates unknown top-level keys) rather
   than inventing new grammar; when 3.2.0.0 R2 namespaces pack
