@@ -4,7 +4,7 @@
 # Validated against the shipped `halo pack` implementation (Halo 3.2.1.0).
 id: halo-hacker
 name: Halo Hacker
-version: 0.5.0
+version: 0.6.0
 description: >-
   Authorized security assessment capability pack: specialized agent roles,
   assessment team lineups, structured playbooks, engagement scope policy,
@@ -45,6 +45,7 @@ contributes:
     - teams/hh-web-app-assessment.yaml
   mcp:
     - {name: ingest, description: knowledge ingestion into the provenance-ledger KB (local notes, PDFs, GitHub files, YouTube subtitles)}
+  skills: skills    # communicate-findings: the baked-in reporting doctrine (no ingestion needed)
   # schemas/, policies/ and playbooks/ are pack data files (read by the pack's
   # own tooling and referenced from the bios), not registry contributions.
 permissions:

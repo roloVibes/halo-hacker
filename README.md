@@ -61,7 +61,7 @@ halo pack install ./pack
 Expected output:
 
 ```
-installed halo-hacker 0.5.0 at ~/.halo/packs/halo-hacker (disabled)
+installed halo-hacker 0.6.0 at ~/.halo/packs/halo-hacker (disabled)
 it offers: 8 bios, 5 lineups, 1 MCP server
 it requests: mcp:ingest
 enable it: halo pack enable halo-hacker --grant mcp:ingest
@@ -95,7 +95,7 @@ standard-library-only.
 ### Step 5 — verify, then start a new session
 
 ```sh
-halo pack list                  # → halo-hacker  0.5.0  enabled  user
+halo pack list                  # → halo-hacker  0.6.0  enabled  user
 halo pack inspect halo-hacker   # → state: enabled; mcp:ingest (granted); problems: none
 ```
 
@@ -160,8 +160,14 @@ the MCP server itself is standard-library-only (no MCP SDK — the SDK's
 
 ## Status
 
-0.5.0 — `halo pack inspect` reports `problems: none` (validated against
-halo 3.2.1.0 on 2026-10-25 and halo 3.3.2.0 on 2026-10-27). The
+0.6.0 — `halo pack inspect` reports `problems: none` (validated against
+halo 3.2.1.0 on 2026-10-25, halo 3.3.2.0 on 2026-10-27, and halo 3.3.4.0
+on 2026-10-29). New in 0.6.0: the baked-in `communicate-findings` skill
+(distilled SANS reporting doctrine — see
+[pack/resources/SOURCES-comm.md](pack/resources/SOURCES-comm.md)) and the
+engage-mode + reporting design notes
+([pack/docs/ENGAGE-MODE.md](pack/docs/ENGAGE-MODE.md),
+[pack/docs/REPORTING.md](pack/docs/REPORTING.md)). The
 ingestion MCP server is smoke-tested end-to-end over stdio JSON-RPC
 (initialize + tools/list + vault guard). The role and team paths are
 implemented, but a complete live assessment running through Halo has not
