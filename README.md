@@ -7,10 +7,114 @@ scope policy, finding schemas, an evidence-driven finding lifecycle, and
 a knowledge ingestion engine (notes, PDFs, GitHub, YouTube → a
 provenance-ledger knowledge base you own).
 
+## Installation
+
+Five steps, about five minutes. Every command below was run and verified
+against halo 3.3.4.0.
+
+### Before you start
+
+- **[Halo Harness](https://github.com/roloVibes/Halo-Harness) 3.2.0.0 or
+  newer, already installed and initialized.** This is a Halo pack, not a
+  standalone program — without Halo there is nothing to install it into.
+  If you don't have Halo yet:
+
+  ```sh
+  curl -fsSL https://raw.githubusercontent.com/roloVibes/Halo-Harness/master/scripts/install-halo.sh | bash
+  halo init        # the wizard: provider, model, permission mode
+  ```
+
+  (Windows and no-installer options:
+  [Halo-Harness docs/INSTALL.md](https://github.com/roloVibes/Halo-Harness/blob/master/docs/INSTALL.md))
+
+- **git**, to clone this repo.
+
+### Step 1 — clone this repo (location is your choice)
+
+```sh
+git clone https://github.com/roloVibes/halo-hacker.git ~/src/halo-hacker
 ```
-halo pack install <this-repo>/pack
+
+`~/src/halo-hacker` is just an example — the clone can live anywhere.
+The clone is only the **download source**: step 2 copies the pack into
+Halo's own storage (`~/.halo/packs/halo-hacker/`), and after that the
+clone is no longer needed.
+
+> **Do not** use `halo pack install
+> https://github.com/roloVibes/halo-hacker.git` — it fails with
+> `no pack.yaml in src`. Halo requires the pack manifest at the root of
+> a git URL, and this repo keeps it under `pack/`. Install from the
+> cloned folder's `pack/` subdirectory, as in step 2.
+
+### Step 2 — install the pack
+
+Run this in your **terminal** — the same place you run `halo`. You do
+not need a Halo session open; if you run it through a session's shell
+tool that works too, but the pack only loads in sessions started
+*after* step 3 (Halo reads enabled packs when a session starts).
+
+```sh
+cd ~/src/halo-hacker          # wherever you cloned it
+halo pack install ./pack
+```
+
+Expected output:
+
+```
+installed halo-hacker 0.5.0 at ~/.halo/packs/halo-hacker (disabled)
+it offers: 8 bios, 5 lineups, 1 MCP server
+it requests: mcp:ingest
+enable it: halo pack enable halo-hacker --grant mcp:ingest
+```
+
+The pack arrives **disabled** — that is normal; step 3 turns it on.
+(If you see `halo-hacker is already installed ... (halo pack update
+halo-hacker)`, you already did this — continue at step 3.)
+
+### Step 3 — enable it and grant its MCP server
+
+```sh
 halo pack enable halo-hacker --grant mcp:ingest
 ```
+
+### Step 4 — point it at your knowledge base
+
+The knowledge base is yours; the pack ships no corpus. Until a vault is
+set, every ingestion tool refuses to run (the vault guard):
+
+```sh
+mkdir -p ~/halo-hacker-kb
+halo config set packs.settings.halo-hacker.vault ~/halo-hacker-kb
+```
+
+(Or per launch: `HALO_HACKER_VAULT=<path>`.) Optional, and only if you
+ingest those sources: `pymupdf` (PDFs) and `yt-dlp` (YouTube subtitles)
+in the Python Halo runs under. The MCP server itself is
+standard-library-only.
+
+### Step 5 — verify, then start a new session
+
+```sh
+halo pack list                  # → halo-hacker  0.5.0  enabled  user
+halo pack inspect halo-hacker   # → state: enabled; mcp:ingest (granted); problems: none
+```
+
+Then start Halo (`halo`) — a session that was already open when you
+enabled the pack will not have it. Inside a session, activate a team:
+
+```sh
+halo teams use halo-hacker--hh-web-app-assessment
+```
+
+### Updating and removing
+
+```sh
+git -C ~/src/halo-hacker pull   # refresh the clone first
+halo pack update halo-hacker    # shows what changes, asks before applying
+halo pack remove halo-hacker    # the pack's files only; your config and vault stay
+```
+
+## The design idea
 
 **Security testing works better as a team. Your models. Your methodology.
 Your security testing team.** Instead of relying on a single model to find
@@ -34,13 +138,8 @@ finding someone else can verify.
 ## What you supply — never bundled
 
 The knowledge base is yours; the pack ships no corpus, no notes, no
-findings. Until a vault is set, every ingestion tool refuses (the vault
-guard):
-
-```bash
-halo config set packs.settings.halo-hacker.vault <path-to-your-kb>
-# or, per launch: HALO_HACKER_VAULT=<path>
-```
+findings. The vault (set in [Installation](#installation) step 4) can
+also be given per launch: `HALO_HACKER_VAULT=<path>`.
 
 Runtime dependencies the pack does not bundle: `pymupdf` (PDFs) and
 `yt-dlp` (YouTube subtitles), loaded only when those sources are used;
@@ -115,9 +214,9 @@ an engagement (signed scope) ──▶ playbooks execute ──▶ candidates
                        independent validation ──▶ judge gate ──▶ report
 ```
 
-1. Install the pack and grant the ingestion server
-   (`halo pack enable halo-hacker --grant mcp:ingest`). Activate a
-   lineup (`halo teams use halo-hacker--hh-web-app-assessment`). The
+1. [Install the pack](#installation) (clone → `halo pack install
+   ./pack` → `halo pack enable halo-hacker --grant mcp:ingest`). Activate
+   a lineup (`halo teams use halo-hacker--hh-web-app-assessment`). The
    session now has an orchestrator, recon, testers, a validator, a
    judge, and a reporter.
 2. Create an **engagement** — a signed authorization record, exact
