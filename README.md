@@ -61,7 +61,7 @@ halo pack install ./pack
 Expected output:
 
 ```
-installed halo-hacker 0.7.0 at ~/.halo/packs/halo-hacker (disabled)
+installed halo-hacker 0.7.1 at ~/.halo/packs/halo-hacker (disabled)
 it offers: 8 bios, 5 lineups, 1 MCP server
 it requests: mcp:ingest
 enable it: halo pack enable halo-hacker --grant mcp:ingest
@@ -95,7 +95,7 @@ standard-library-only.
 ### Step 5 — verify, then start a new session
 
 ```sh
-halo pack list                  # → halo-hacker  0.7.0  enabled  user
+halo pack list                  # → halo-hacker  0.7.1  enabled  user
 halo pack inspect halo-hacker   # → state: enabled; mcp:ingest (granted); problems: none
 ```
 
@@ -142,6 +142,7 @@ finding someone else can verify.
 | **Report engine** (`pack/reporting/`, `pack/commands/hh-report.md`) | Leadership email (5-part shape, mailto link — the pack generates, never sends) and full findings report (exec summary first, parallel per-finding template, evidence appendices) — confirmed findings only, driven by the communicate-findings doctrine. |
 | **Engage-mode** (`pack/tools/engage.py`, `pack/hooks/`) | `/hh` engage/status/disengage: the engagement record as the boundary — one state file, fail-closed engage inside the test window, a pack hook gating shell commands against engagement scope. Scope as data, not location. |
 | **Findings import** (`pack/tools/import_findings.py`) | Field-user intake: manual entry, pack-schema JSON, and scanner output (Nuclei/Semgrep) — everything enters as a **candidate** with provenance (source: import/scanner) and real ledger rows; an import can never arrive confirmed. |
+| **Passive traffic observer** (`pack/tools/passive_checks.py`, `pack/tools/traffic_observer.py`) | While a human tester works through Caido or Burp, the pack reads their proxy traffic (read-only polling) and surfaces **candidate** findings as they test: declarative checks (missing security headers, verbose banners, stack traces, internal IPs, cookie flags, reflected params), scope-gated, redaction applied before evidence, deduped, never sends anything. The tester tests; the pack watches. |
 
 ## What you supply — never bundled
 

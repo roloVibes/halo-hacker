@@ -4,7 +4,7 @@
 # Validated against the shipped `halo pack` implementation (Halo 3.2.1.0).
 id: halo-hacker
 name: Halo Hacker
-version: 0.7.0
+version: 0.7.1
 description: >-
   Authorized security assessment capability pack: specialized agent roles,
   assessment team lineups, structured playbooks, engagement scope policy,
