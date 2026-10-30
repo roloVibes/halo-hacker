@@ -61,7 +61,7 @@ halo pack install ./pack
 Expected output:
 
 ```
-installed halo-hacker 0.6.0 at ~/.halo/packs/halo-hacker (disabled)
+installed halo-hacker 0.7.0 at ~/.halo/packs/halo-hacker (disabled)
 it offers: 8 bios, 5 lineups, 1 MCP server
 it requests: mcp:ingest
 enable it: halo pack enable halo-hacker --grant mcp:ingest
@@ -95,7 +95,7 @@ standard-library-only.
 ### Step 5 — verify, then start a new session
 
 ```sh
-halo pack list                  # → halo-hacker  0.6.0  enabled  user
+halo pack list                  # → halo-hacker  0.7.0  enabled  user
 halo pack inspect halo-hacker   # → state: enabled; mcp:ingest (granted); problems: none
 ```
 
@@ -134,6 +134,14 @@ finding someone else can verify.
 | **Findings store + reporting** (`pack/tools/`) | Hash-chained evidence ledger with tamper detection and checkpoints, fail-closed writes, controlled withdrawal, and draft report generation from confirmed records only. |
 | **Scanner normalizers** (`pack/tools/normalizers.py`) | Nuclei and Semgrep output → schema-valid **candidate** findings — scanner output is a candidate, never a confirmation. |
 | **Knowledge ingestion** (`pack/ingest/`, `pack/mcp/ingest_server.py`) | The ingestion MCP server (declared in `pack/.mcp.json`, granted with `mcp:ingest`) plus the headless CLI (`pack/cli.py`): local notes/Obsidian vaults, PDFs, GitHub files, YouTube subtitles → classify → distill → gated upsert into a provenance-ledger KB. Local model lane by default; hosted is explicit opt-in. |
+| **Communicate-findings skill** (`pack/skills/communicate-findings/`) | The baked-in reporting doctrine (distilled SANS training, 13 sources — provenance in `pack/resources/SOURCES-comm.md`): the reader model, ten rules, the four questions, the leadership-email shape, the full-report shape, and a mechanical pre-send checklist. No ingestion needed. |
+| **CVE enrichment** (`pack/mcp/cve_server.py`) | A second MCP server (granted with `mcp:cve`): NVD 2.0 lookup with an unauthenticated rate pacer, CISA KEV checks (24 h cached), FIRST EPSS scores. Thin, stdlib-only, fail-never. |
+| **CVSS 3.1 scoring** (`pack/tools/cvss31.py`) | Local, deterministic scoring: parse/validate vectors, base score + severity, one-call `score_vector`. Differential-verified 380/380 against the reference implementation. Findings store the vector; the score is always derived. |
+| **MITRE layer** (`pack/tools/mitre_view.py`, `pack/skills/attack-flow/`) | ATLAS 2026.10 ships in the pack; ATT&CK Enterprise caches on first use. Technique lookup/search, `technique_ids` on findings, and the attack-flow skill: per-finding mapping, the holistic engagement narrative, Navigator layer export, and capability-token chain candidates (projected vs demonstrated, always labeled). |
+| **Studio findings view** (`pack.yaml` studio, `pack/tools/findings_view.py`) | A pack-declared Studio section: counts strip, findings table, and a lifecycle feed (`hh.finding` events). Display states: identified / reviewed / confirmed. |
+| **Report engine** (`pack/reporting/`, `pack/commands/hh-report.md`) | Leadership email (5-part shape, mailto link — the pack generates, never sends) and full findings report (exec summary first, parallel per-finding template, evidence appendices) — confirmed findings only, driven by the communicate-findings doctrine. |
+| **Engage-mode** (`pack/tools/engage.py`, `pack/hooks/`) | `/hh` engage/status/disengage: the engagement record as the boundary — one state file, fail-closed engage inside the test window, a pack hook gating shell commands against engagement scope. Scope as data, not location. |
+| **Findings import** (`pack/tools/import_findings.py`) | Field-user intake: manual entry, pack-schema JSON, and scanner output (Nuclei/Semgrep) — everything enters as a **candidate** with provenance (source: import/scanner) and real ledger rows; an import can never arrive confirmed. |
 
 ## What you supply — never bundled
 
@@ -160,17 +168,16 @@ the MCP server itself is standard-library-only (no MCP SDK — the SDK's
 
 ## Status
 
-0.6.0 — `halo pack inspect` reports `problems: none` (validated against
-halo 3.2.1.0 on 2026-10-25, halo 3.3.2.0 on 2026-10-27, and halo 3.3.4.0
-on 2026-10-29). New in 0.6.0: the baked-in `communicate-findings` skill
-(distilled SANS reporting doctrine — see
-[pack/resources/SOURCES-comm.md](pack/resources/SOURCES-comm.md)) and the
-engage-mode + reporting design notes
-([pack/docs/ENGAGE-MODE.md](pack/docs/ENGAGE-MODE.md),
-[pack/docs/REPORTING.md](pack/docs/REPORTING.md)). The
-ingestion MCP server is smoke-tested end-to-end over stdio JSON-RPC
-(initialize + tools/list + vault guard). The role and team paths are
-implemented, but a complete live assessment running through Halo has not
+0.7.0 — `halo pack inspect` reports `problems: none` (validated against
+halo 3.3.4.0 on 2026-10-29/30; 102+ tests green, CVSS differential-verified
+380/380 against the reference implementation). New in 0.7.0: CVE
+enrichment server, local CVSS 3.1 scoring, the MITRE layer (ATLAS shipped
++ ATT&CK cached, attack-flow skill, technique_ids), the Studio findings
+view with hh.finding events, the report engine, engage-mode with the
+scope-guard hook, findings import, and the communicating-findings doctrine
+(0.6.0) it all reports through. The ingestion MCP server remains
+smoke-tested end-to-end over stdio JSON-RPC. A complete live assessment
+running through Halo has not
 yet been demonstrated in the published test results. See
 [pack/docs/IMPLEMENTATION_STATUS.md](pack/docs/IMPLEMENTATION_STATUS.md),
 [pack/COMPATIBILITY.md](pack/COMPATIBILITY.md), and

@@ -1,0 +1,9 @@
+# Runtime-written state (the shipped placeholders for findings/ were added
+# with -f; everything else here is per-machine and never committed).
+engage-state.json
+engage-history.jsonl
+gate-log.jsonl
+attack-index.json
+cve/
+findings/summary.json
+findings/counts.md

@@ -1,0 +1,45 @@
+{
+  "vulnerabilities": [
+    {
+      "cve": {
+        "id": "CVE-2023-12345",
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "A test CVE description for demonstration purposes."
+          }
+        ],
+        "published": "2023-01-01T00:00:00.000Z",
+        "lastModified": "2023-01-02T00:00:00.000Z",
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                "baseScore": 9.8,
+                "baseSeverity": "CRITICAL"
+              },
+              "source": "nvd@nist.gov"
+            }
+          ]
+        },
+        "problemTypes": [
+          {
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-79"
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "https://example.com/cve-2023-12345"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -34,6 +34,11 @@ below is that principle made mechanical.
   enough for this") and dismiss the report — they do not suspect the
   writing. Don't over-assume competence: state the IP, name the tool,
   spell out what the evidence means.
+- **Define the reader and your objective in their terms before you write.**
+  Zeltser's first threat report was rejected because he wrote about the
+  tools he used, while the reader wanted containment and eradication steps.
+  If you don't know what the reader needs, ask; if you can't ask, develop
+  empathy. Match technical depth to the audience's expectations.
 
 The consequence: certain surfaces are *preview surfaces* — subject line,
 title, executive summary, headings, first sentences, bullet items, table
@@ -43,6 +48,9 @@ the takeaway, because some reader reads nothing else. Zeltser calls this
 delivering the message there.
 
 ## The ten rules (each fixes a classic mistake)
+
+The ten mistakes pair into five golden elements — structure, look, words,
+tone, information — so fixing one item usually strengthens its partner.
 
 1. **Lead with the main point.** Never walk the reader through reasoning
    to a delayed conclusion. Move the conclusion to sentence one; it
@@ -55,17 +63,22 @@ delivering the message there.
    more topic sentences = more of your ideas reaching a skimmer.
 3. **Graphics that explain at a glance, or none.** Three-second test: if
    a reader can't grasp it without effort, redesign it or use a table.
-   Prefer bars over pies; label data directly, not via a legend hunt;
-   full-sentence captions that state the conclusion; reference every
-   graphic from the body text.
+   Prefer bars over pies; crop screenshots to the relevant area; avoid
+   hand-drawn diagrams that require decoding; label data directly, not via
+   a legend hunt; full-sentence captions that state the conclusion;
+   reference every graphic from the body text.
 4. **Consistent formatting — it is not cosmetic.** Max two typefaces, two
    colors, one or two emphasis forms; uniform spacing; one spelling per
    tool name (defer to the vendor's); inspect pasted text for carried
-   formatting. Deliberate emphasis is fine; random emphasis is the sin.
+   formatting. Use a style sheet or template for multi-analyst reports so
+   headings, colors, spacing, and capitalization are enforced, not eyeballed.
+   Deliberate emphasis is fine; random emphasis is the sin.
 5. **Minimum words.** After drafting any paragraph, cut it by at least
    20% — the demonstrated cuts run 39–41% with no information lost.
-   "When in doubt, cut it out." But never cut detail the reader needs;
-   brevity is not omission.
+   Read sentences aloud to find natural pauses and filler; strike phrases
+   like "at this point in time" → "now", "in order to" → "to", and
+   "it is important to note that" → delete. "When in doubt, cut it out."
+   But never cut detail the reader needs; brevity is not omission.
 6. **Parallel structure.** Every list item starts with the same word
    form — imperative verbs ("Confirm… Check… Use… Share…"). A mixed-form
    list is a staircase with one short step: readers trip. Applies to
@@ -81,14 +94,17 @@ delivering the message there.
    ignored, follow up in person or by phone — don't get louder in text.
 9. **Detail goes to appendices.** Raw tool output, packet captures,
    request/response bodies, full logs: appendix, referenced from the
-   body ("see Appendix B"). Never make the main narrative a proof-of-work
-   display. Every included detail must answer a question the reader
-   actually has.
+   body ("see Appendix B"). The appendix is also where you park details
+   you don't have the heart to delete but most readers won't need. Never
+   make the main narrative a proof-of-work display. Every included detail
+   must answer a question the reader actually has.
 10. **Credit and provenance.** Name who did the work — "the validator
     independently reproduced…" not "it was confirmed." Passive voice that
-    obscures the actor undermines trust. Be explicit about reliability
-    and uncertainty: honest caveats read as professionalism, not
-    weakness.
+    obscures the actor undermines trust. Distinguish what your team
+    derived from what came from third parties; include references when
+    quoting or paraphrasing; thank contributors whose work supported the
+    finding. Be explicit about reliability and uncertainty: honest caveats
+    read as professionalism, not weakness.
 
 ## The four questions every findings artifact answers
 
@@ -159,6 +175,10 @@ claim survives if ONLY the subject and first paragraph are read.
 
 Even experts use checklists — surgeons do. The checklist is not an
 insult; it is the discipline that makes the output reliable.
+
+To internalize these rules, critique writing you read — reports, emails,
+articles — not to tear it down but to train your eye. Spotting flaws in
+others' work makes it easier to catch them in your own before they ship.
 
 ## Provenance
 

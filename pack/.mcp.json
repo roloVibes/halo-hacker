@@ -6,6 +6,10 @@
       "env": {
         "HALO_HACKER_PACK_ID": "halo-hacker"
       }
+    },
+    "cve": {
+      "command": "${halo_python}",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/cve_server.py"]
     }
   }
 }

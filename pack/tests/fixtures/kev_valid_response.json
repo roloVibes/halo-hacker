@@ -1,0 +1,16 @@
+{
+  "vulnerabilities": [
+    {
+      "cveID": "CVE-2023-12345",
+      "rationalForExploitation": "Used in targeted attacks against financial institutions.",
+      "dateAdded": "2023-01-01",
+      "requiredAction": "Apply vendor patches immediately."
+    },
+    {
+      "cveID": "CVE-2023-67890",
+      "rationalForExploitation": "Exploited in ransomware campaigns.",
+      "dateAdded": "2023-02-01",
+      "requiredAction": "Monitor for exploitation attempts."
+    }
+  ]
+}

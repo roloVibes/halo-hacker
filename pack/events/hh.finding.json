@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "hh.finding event",
+  "description": "One finding lifecycle moment from an assessment, published to the Studio live feed: a candidate was identified (by a tester, a scanner, a field import, or passive traffic review), validated, confirmed, or rejected.",
+  "type": "object",
+  "required": ["finding_id", "title", "state", "engagement_id"],
+  "additionalProperties": false,
+  "properties": {
+    "finding_id": { "type": "string" },
+    "engagement_id": { "type": "string" },
+    "title": { "type": "string" },
+    "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "info"] },
+    "state": { "type": "string", "enum": ["identified", "reviewed", "confirmed", "rejected", "duplicate", "withdrawn"] },
+    "source": { "type": "string", "enum": ["tester", "scanner", "import", "passive-traffic"], "description": "how the candidate entered the pipeline" },
+    "target_ref": { "type": "string" },
+    "evidence_ref": { "type": "string", "description": "ledger ref for the decisive evidence, when set" },
+    "actor": { "type": "string", "description": "who moved the state (role or human)" }
+  }
+}

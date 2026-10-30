@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${halo_python} ${CLAUDE_PLUGIN_ROOT}/hooks/scope_guard.py"
+          }
+        ]
+      }
+    ]
+  }
+}
