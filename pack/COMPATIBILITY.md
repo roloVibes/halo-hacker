@@ -16,6 +16,9 @@
 | Unknown top-level keys tolerated | `validate_agent_bio` | verified | the `hh:` pack-extension block round-trips untouched |
 | Pack manifest (`.mcp.json`, `pack.yaml` contributes/permissions/config) | `halo_harness/packs/` | stable (3.2.0.0+) | the ingestion MCP server (`mcp/ingest_server.py`), the `mcp:ingest` grant, the `vault` settings key |
 | `halo_harness.ext.get_config` | extension API 1.0 | stable | the server reads `packs.settings.halo-hacker.vault` (falls back to `HALO_HACKER_VAULT`, then refuses) |
+| `halo_harness.ext.data_dir` | extension API 1.0 | stable | findings_view resolves the pack data folder (`~/.halo/packs/.data/halo-hacker/` — where Studio serves `data:` panel sources from); falls back to the same path by convention, `$HALO_HACKER_DATA_DIR` overrides |
+| `halo_harness.ext.publish_event` | extension API 1.0 | stable | findings_view publishes `hh.finding` to the Studio live feed on every store change (best-effort, never raises; without the harness the event is simply not published) |
+| Studio bundle panels (`contributes.studio`, kind `bundle`, `studio-script` grant) | `halo_harness/packs/studio_registry.py`, `studio/packs_studio_api.py` | stable (3.2.0.0 R3+) | the findings browser (`studio/findings.js`, ES module, `mount(el, api)`), reads `data/findings/summary.json` + per-finding detail JSON over the pack data route, live refresh via `/api/events` |
 | `halo teams use <name>` | `teams_cli.py` | stable | lineup activation |
 | KNOWN_KINDS | main, subagent, researcher, judge, reviewer, custom, media | stable | role kinds in bios |
 | Model refs | `default` or `<route>:<id>` | stable | pack hardcodes NO models (`default` everywhere) |

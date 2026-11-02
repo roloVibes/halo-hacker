@@ -4,7 +4,7 @@
 # Validated against the shipped `halo pack` implementation (Halo 3.2.1.0).
 id: halo-hacker
 name: Halo Hacker
-version: 0.7.1
+version: 0.8.0
 description: >-
   Authorized security assessment capability pack: specialized agent roles,
   assessment team lineups, structured playbooks, engagement scope policy,
@@ -55,14 +55,31 @@ contributes:
         title: Halo Hacker
         blurb: Findings for the active engagement — identified, reviewed, confirmed.
         help: >-
-          The counts strip and the table read the pack's data folder, written by
-          tools/findings_view.py from the engagement tree (run it after any state
-          change, or wire it to put_finding). The feed shows hh.finding events.
+          The browser panel is the pack's own script (grant studio-script to
+          run it): every finding clickable — full detail, evidence, validation,
+          reviewer decision — with filters, search and live refresh. The counts
+          and table panels read the pack's data folder, written by
+          tools/findings_view.py on every store change (and by
+          `findings_view.py auto`). The feed shows hh.finding events.
         panels:
+          - id: browser
+            title: Findings browser
+            kind: bundle
+            source: studio/findings.js
+            w: 24
+            h: 120
+            help: >-
+              Interactive findings browser: click a row (or Enter on a selected
+              row) for the full finding — description, evidence ledger rows,
+              validation, reviewer decision, remediation, audit history.
+              Filter by severity/state/source, free-text search, copy as
+              markdown, open raw JSON. Refreshes on hh.finding events and
+              every 15s. Requires the studio-script grant.
           - id: counts
-            title: Findings
-            kind: markdown
-            source: "data/findings/counts.md"
+            title: Counts
+            kind: table
+            source: "data:findings/counts.json"
+            columns: [engagement, identified, reviewed, confirmed]
             w: 24
             h: 12
           - id: table
@@ -71,13 +88,18 @@ contributes:
             source: "data:findings/summary.json"
             columns: [finding_id, title, severity, state, target_ref, source, updated]
             w: 24
-            h: 88
+            h: 60
           - id: feed
             title: Lifecycle
             kind: events
             w: 24
             h: 40
             help: "hh.finding events as they happen (tester, scanner, import, passive traffic)"
+    palette:
+      - {id: open-browser, label: Open the findings browser, action: "route:halo-hacker/browser"}
+      - {id: open-table, label: Open the findings table, action: "route:halo-hacker/table"}
+      - {id: open-lifecycle, label: Open the findings lifecycle feed, action: "route:halo-hacker/feed"}
+    config_form: true
   # schemas/, policies/ and playbooks/ are pack data files (read by the pack's
   # own tooling and referenced from the bios), not registry contributions.
 permissions:
@@ -85,6 +107,7 @@ permissions:
   - mcp:cve       # thin CVE enrichment (NVD 2.0 + CISA KEV + FIRST EPSS; mcp/cve_server.py)
   - bash          # the PreToolUse scope guard classifies Bash commands against engagement scope
   - hooks         # the pack contributes a PreToolUse hook (hooks/hooks.json)
+  - studio-script # the findings browser bundle panel (studio/findings.js)
 config:
   schema:
     properties:

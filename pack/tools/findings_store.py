@@ -85,6 +85,23 @@ class FindingStore:
         self.checkpoints = self.evidence / "checkpoints"
         self.findings_dir = self.root / "findings"
         self.report_dir = self.root / "report"
+        # Studio sync (findings_view.attach): every mutation rewrites the
+        # pack's panel files and publishes an hh.finding event. Best-effort
+        # only — a view failure must never fail the store.
+        self.change_hooks: list = []
+        try:
+            from findings_view import attach as _attach_view
+            _attach_view(self)
+        except Exception:
+            pass
+
+    def _changed(self, finding: dict) -> None:
+        """Notify change hooks (Studio sync). Never raises."""
+        for hook in list(self.change_hooks):
+            try:
+                hook(finding)
+            except Exception:
+                pass
 
     # -- lifecycle ---------------------------------------------------------
 
@@ -265,6 +282,7 @@ class FindingStore:
         d = self.findings_dir / finding["finding_id"]
         d.mkdir(parents=True, exist_ok=True)
         _atomic_write(d / "finding.json", json.dumps(finding, indent=2))
+        self._changed(finding)
         return d / "finding.json"
 
     def _resolve_evidence_refs(self, finding: dict) -> None:
@@ -341,6 +359,7 @@ class FindingStore:
         }
         _atomic_write(self.findings_dir / finding_id / "finding.json",
                       json.dumps(tombstone, indent=2))
+        self._changed(tombstone)
         return tombstone
 
     def purge_artifact(self, artifact_sha256: str, actor: str, reason: str) -> None:
