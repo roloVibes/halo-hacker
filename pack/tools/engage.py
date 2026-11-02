@@ -19,10 +19,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+def _ext_data_dir() -> Path | None:
+    """The harness's data-dir resolver, when halo_harness is importable."""
+    try:
+        from halo_harness.ext import data_dir as _harness_data_dir
+        return Path(_harness_data_dir("halo-hacker"))
+    except Exception:
+        return None
+
+
 def _data_dir() -> Path:
-    """The pack's OWN data folder. Env override for tests."""
-    d = Path(os.environ.get("HALO_HACKER_DATA_DIR")
-             or (Path(__file__).resolve().parent.parent / "data"))
+    """The pack's DATA folder (~/.halo/packs/.data/halo-hacker/) — the same place
+    findings_view writes the Studio panel files. Env override for tests;
+    convention fallback when the harness import is unavailable. NEVER the
+    pack folder itself: runtime state must not land in the install unit."""
+    d = (Path(os.environ.get("HALO_HACKER_DATA_DIR"))
+         if os.environ.get("HALO_HACKER_DATA_DIR")
+         else (_ext_data_dir()
+               or Path.home() / ".halo" / "packs" / ".data" / "halo-hacker"))
     d.mkdir(parents=True, exist_ok=True)
     return d
 
