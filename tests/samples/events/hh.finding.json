@@ -1,0 +1,11 @@
+{
+  "finding_id": "fnd-2026-0142",
+  "engagement_id": "eng-acme-web-2026-01",
+  "title": "Reflected XSS in the search parameter of /catalog",
+  "severity": "high",
+  "state": "confirmed",
+  "source": "tester",
+  "target_ref": "https://app.example.com/catalog?q=",
+  "evidence_ref": "ev-0007",
+  "actor": "hh-validator"
+}

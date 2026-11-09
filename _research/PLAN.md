@@ -98,7 +98,8 @@ Two sources, one pipeline: **local notes** (Obsidian/Notion/markdown adapters) a
 ## Architecture — in-session primary, headless degraded, never a second runtime
 
 ```
-halo-hacker/pack/                 # everything the pack ships lives here (2026-10-27)
+halo-hacker/                      # everything the pack ships lives here — the repo root IS the pack
+                                  # (it was halo-hacker/ until 0.9.0 moved it to the root, 2026-11-08)
   ingest/          # the library: scan, filter, classify, distill, upsert — no policy of its own
   mcp/ingest_server.py  # in-session surface (primary mode): tools the agent calls
   cli.py           # headless entry — same library, same guards; refuses filtered content
@@ -168,24 +169,28 @@ mistake, and it's on the What-NOT-to-do list of both plans.
 
 ## Status — pack Milestone 1 COMPLETE (2026-10-21)
 
+> **Layout note (2026-11-08, 0.9.0):** the `pack/` prefix below is historical —
+> the pack now lives at the **repo root** (the Halo pack-template layout), so
+> read every `pack/<x>` in this dated entry as `<x>`.
+
 **The Halo Hacker capability pack** (the security-assessment extension to
 Halo Harness, spec applied 2026-10-21; ADDS to this project, ingestion
 engine untouched) lives at `pack/`:
 
-- `pack/pack.yaml` — manifest per the Halo 3.2.0.0 R1 Packs contract
+- `pack.yaml` — manifest per the Halo 3.2.0.0 R1 Packs contract
   (roadmap added upstream 2026-10-21; registry not yet implemented —
   see `pack/CORE_REQUESTS.md`)
-- `pack/agents/` — 8 role bios in the REAL Halo bio grammar (verified:
+- `agents/` — 8 role bios in the REAL Halo bio grammar (verified:
   they pass `halo_harness/agents_yaml.py`'s own validator against master
   @ 90cd137), security role contract under a namespaced `hh:` block the
   loader round-trips untouched
-- `pack/teams/` — 5 lineups (web, api, ai, cloud, validation+reporting)
-- `pack/schemas/` — engagement / scope-targets / finding / playbook
+- `teams/` — 5 lineups (web, api, ai, cloud, validation+reporting)
+- `schemas/` — engagement / scope-targets / finding / playbook
   JSON Schemas (lifted from halo-harness-cyber/ENGAGEMENT-MODEL.md)
-- `pack/scripts/install-compat.sh` — pre-3.2.0.0 adapter: REMOVED
+- `scripts/install-compat.sh` — pre-3.2.0.0 adapter: REMOVED
   2026-10-27 (CR-1 shipped in halo 3.2.0.0; `halo pack install` is the
   only install path — the manifest floor already excluded pre-3.2.0.0).
-- `pack/tests/` — 14/14 green incl. the real-harness validator pin;
+- `tests/` — 14/14 green incl. the real-harness validator pin;
   validator exit-code gated. Details: `pack/TEST_RESULTS.md`
 - Tracking: `pack/{CORE_REQUESTS,COMPATIBILITY,IMPLEMENTATION_STATUS,PLAYBOOK_CATALOG,INTEGRATION_STATUS,TEST_RESULTS}.md`
 

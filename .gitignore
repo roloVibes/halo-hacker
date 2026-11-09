@@ -1,6 +1,13 @@
+# Caches and the pack's run-time data: none of it belongs in the repo.
+# A pack folder is scanned and copied whole by `halo pack test` / `halo pack install`
+# (only .git and __pycache__ are skipped), so nothing cache-shaped may live inside it.
 .venv/
 __pycache__/
 *.pyc
 .pytest_cache/
-# Local-only: drift checker against the owner's private vault (not published)
-scripts/check_drift.py
+.halo/
+.data/
+node_modules/
+# Local-only tools live OUTSIDE the pack (a personal path inside it fails the
+# privacy scan): check_drift.py is in ~/halo-hacker-ops/.
+scripts/

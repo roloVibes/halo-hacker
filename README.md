@@ -9,12 +9,12 @@ provenance-ledger knowledge base you own).
 
 ## Installation
 
-Five steps, about five minutes. Every command below was run and verified
-against halo 3.3.4.0.
+Four steps, about two minutes. Every command below was run and verified
+against halo 3.3.12.0.
 
 ### Before you start
 
-- **[Halo Harness](https://github.com/roloVibes/Halo-Harness) 3.2.0.0 or
+- **[Halo Harness](https://github.com/roloVibes/Halo-Harness) 3.3 or
   newer, already installed and initialized.** This is a Halo pack, not a
   standalone program — without Halo there is nothing to install it into.
   If you don't have Halo yet:
@@ -27,57 +27,47 @@ against halo 3.3.4.0.
   (Windows and no-installer options:
   [Halo-Harness docs/INSTALL.md](https://github.com/roloVibes/Halo-Harness/blob/master/docs/INSTALL.md))
 
-- **git**, to clone this repo.
+### Step 1 — install the pack
 
-### Step 1 — clone this repo (location is your choice)
-
-```sh
-git clone https://github.com/roloVibes/halo-hacker.git ~/src/halo-hacker
-```
-
-`~/src/halo-hacker` is just an example — the clone can live anywhere.
-The clone is only the **download source**: step 2 copies the pack into
-Halo's own storage (`~/.halo/packs/halo-hacker/`), and after that the
-clone is no longer needed.
-
-> **Do not** use `halo pack install
-> https://github.com/roloVibes/halo-hacker.git` — it fails with
-> `no pack.yaml in src`. Halo requires the pack manifest at the root of
-> a git URL, and this repo keeps it under `pack/`. Install from the
-> cloned folder's `pack/` subdirectory, as in step 2.
-
-### Step 2 — install the pack
-
-Run this in your **terminal** — the same place you run `halo`. You do
-not need a Halo session open; if you run it through a session's shell
-tool that works too, but the pack only loads in sessions started
-*after* step 3 (Halo reads enabled packs when a session starts).
+The repository root **is** the pack, so Halo can install it straight from
+GitHub. Run this in your **terminal** — the same place you run `halo`. You do
+not need a Halo session open; the pack only loads in sessions started *after*
+step 2 (Halo reads enabled packs when a session starts).
 
 ```sh
-cd ~/src/halo-hacker          # wherever you cloned it
-halo pack install ./pack
+halo pack sources add https://github.com/roloVibes/halo-hacker
+halo pack install halo-hacker
 ```
 
 Expected output:
 
 ```
-installed halo-hacker 0.7.1 at ~/.halo/packs/halo-hacker (disabled)
-it offers: 8 bios, 5 lineups, 1 MCP server
-it requests: mcp:ingest
-enable it: halo pack enable halo-hacker --grant mcp:ingest
+installed halo-hacker 0.9.0 at ~/.halo/packs/halo-hacker (disabled)
+it offers: 8 bios, 5 lineups, 2 skills, 3 commands, 2 MCP servers, 1 hook event
+it requests: mcp:ingest, mcp:cve, bash, hooks, studio-script
+enable it: halo pack enable halo-hacker --grant mcp:ingest --grant mcp:cve --grant bash --grant hooks --grant studio-script
 ```
 
-The pack arrives **disabled** — that is normal; step 3 turns it on.
-(If you see `halo-hacker is already installed ... (halo pack update
-halo-hacker)`, you already did this — continue at step 3.)
+From a clone instead (`git clone https://github.com/roloVibes/halo-hacker.git`,
+then `halo pack install ./halo-hacker`) works the same way.
 
-### Step 3 — enable it and grant its MCP server
+The pack arrives **disabled** — that is normal; step 2 turns it on.
+(If you see `halo-hacker is already installed ... (halo pack update
+halo-hacker)`, you already did this — continue at step 2.)
+
+### Step 2 — enable it and grant what it asks for
 
 ```sh
-halo pack enable halo-hacker --grant mcp:ingest
+halo pack enable halo-hacker --grant-all
 ```
 
-### Step 4 — point it at your knowledge base
+`--grant-all` gives it the two MCP servers (`ingest`, `cve`), `bash` (the
+scope guard classifies Bash commands against the engagement's scope), `hooks`
+(the PreToolUse scope guard) and `studio-script` (the findings browser panel).
+Granting them one at a time works too:
+`halo pack enable halo-hacker --grant mcp:ingest --grant mcp:cve --grant bash --grant hooks --grant studio-script`.
+
+### Step 3 — point it at your knowledge base
 
 The knowledge base is yours; the pack ships no corpus. Until a vault is
 set, every ingestion tool refuses to run (the vault guard):
@@ -92,11 +82,11 @@ ingest those sources: `pymupdf` (PDFs) and `yt-dlp` (YouTube subtitles)
 in the Python Halo runs under. The MCP server itself is
 standard-library-only.
 
-### Step 5 — verify, then start a new session
+### Step 4 — verify, then start a new session
 
 ```sh
-halo pack list                  # → halo-hacker  0.7.1  enabled  user
-halo pack inspect halo-hacker   # → state: enabled; mcp:ingest (granted); problems: none
+halo pack list                  # → halo-hacker  0.9.0  enabled  user
+halo pack inspect halo-hacker   # → problems: none
 ```
 
 Then start Halo (`halo`) — a session that was already open when you
@@ -109,10 +99,17 @@ halo teams use halo-hacker--hh-web-app-assessment
 ### Updating and removing
 
 ```sh
-git -C ~/src/halo-hacker pull   # refresh the clone first
-halo pack update halo-hacker    # shows what changes, asks before applying
+halo pack update halo-hacker    # from its source: shows what changes, asks before applying
+halo pack rollback halo-hacker  # back to the version the last update replaced
 halo pack remove halo-hacker    # the pack's files only; your config and vault stay
 ```
+
+### Working on the pack itself
+
+See **[HALO-PACK.md](HALO-PACK.md)** — the pack's contract page: what every
+part is, the change loop (`halo pack test .` must stay at `0 failed`), and the
+rules this repo holds to. `CHANGELOG.md` says what changed per version.
+
 
 ## The design idea
 
@@ -127,22 +124,22 @@ finding someone else can verify.
 
 | Piece | What it is |
 |---|---|
-| **8 agent roles** (`pack/agents/`) | orchestrator, recon, web tester, API tester, AI security tester, validator (independent repro), judge (evidence review), reporter — Halo bio grammar + an `hh:` security-role contract block, model-agnostic (`default` everywhere). |
-| **5 team lineups** (`pack/teams/`) | web-app assessment, API security review, AI security review, cloud config assessment, finding validation + reporting. |
-| **16 playbooks** (`pack/playbooks/`) | Declarative, schema-validated workflows across recon, discovery, validation, evidence, and reporting — with the approval gate mechanically enforced (any stage above `low-impact` must set `requires_approval: true`). Catalog: [pack/PLAYBOOK_CATALOG.md](pack/PLAYBOOK_CATALOG.md). |
-| **Schemas** (`pack/schemas/`) | Engagement (signed scope, test window, accounts, rate limits, data locality), scope-targets, playbook, and finding — where `status: confirmed` is structurally impossible without independent reproduction and a reviewer decision citing evidence. |
-| **Findings store + reporting** (`pack/tools/`) | Hash-chained evidence ledger with tamper detection and checkpoints, fail-closed writes, controlled withdrawal, and draft report generation from confirmed records only. |
-| **Scanner normalizers** (`pack/tools/normalizers.py`) | Nuclei and Semgrep output → schema-valid **candidate** findings — scanner output is a candidate, never a confirmation. |
-| **Knowledge ingestion** (`pack/ingest/`, `pack/mcp/ingest_server.py`) | The ingestion MCP server (declared in `pack/.mcp.json`, granted with `mcp:ingest`) plus the headless CLI (`pack/cli.py`): local notes/Obsidian vaults, PDFs, GitHub files, YouTube subtitles → classify → distill → gated upsert into a provenance-ledger KB. Local model lane by default; hosted is explicit opt-in. |
-| **Communicate-findings skill** (`pack/skills/communicate-findings/`) | The baked-in reporting doctrine (distilled SANS training, 13 sources — provenance in `pack/resources/SOURCES-comm.md`): the reader model, ten rules, the four questions, the leadership-email shape, the full-report shape, and a mechanical pre-send checklist. No ingestion needed. |
-| **CVE enrichment** (`pack/mcp/cve_server.py`) | A second MCP server (granted with `mcp:cve`): NVD 2.0 lookup with an unauthenticated rate pacer, CISA KEV checks (24 h cached), FIRST EPSS scores. Thin, stdlib-only, fail-never. |
-| **CVSS 3.1 scoring** (`pack/tools/cvss31.py`) | Local, deterministic scoring: parse/validate vectors, base score + severity, one-call `score_vector`. Differential-verified 380/380 against the reference implementation. Findings store the vector; the score is always derived. |
-| **MITRE layer** (`pack/tools/mitre_view.py`, `pack/skills/attack-flow/`) | ATLAS 2026.10 ships in the pack; ATT&CK Enterprise caches on first use. Technique lookup/search, `technique_ids` on findings, and the attack-flow skill: per-finding mapping, the holistic engagement narrative, Navigator layer export, and capability-token chain candidates (projected vs demonstrated, always labeled). |
-| **Studio findings view** (`pack.yaml` studio, `pack/tools/findings_view.py`) | A pack-declared Studio section: counts strip, findings table, and a lifecycle feed (`hh.finding` events). Display states: identified / reviewed / confirmed. |
-| **Report engine** (`pack/reporting/`, `pack/commands/hh-report.md`) | Leadership email (5-part shape, mailto link — the pack generates, never sends) and full findings report (exec summary first, parallel per-finding template, evidence appendices) — confirmed findings only, driven by the communicate-findings doctrine. |
-| **Engage-mode** (`pack/tools/engage.py`, `pack/hooks/`) | `/hh` engage/status/disengage: the engagement record as the boundary — one state file, fail-closed engage inside the test window, a pack hook gating shell commands against engagement scope. Scope as data, not location. |
-| **Findings import** (`pack/tools/import_findings.py`) | Field-user intake: manual entry, pack-schema JSON, and scanner output (Nuclei/Semgrep) — everything enters as a **candidate** with provenance (source: import/scanner) and real ledger rows; an import can never arrive confirmed. |
-| **Passive traffic observer** (`pack/tools/passive_checks.py`, `pack/tools/traffic_observer.py`) | While a human tester works through Caido or Burp, the pack reads their proxy traffic (read-only polling) and surfaces **candidate** findings as they test: declarative checks (missing security headers, verbose banners, stack traces, internal IPs, cookie flags, reflected params), scope-gated, redaction applied before evidence, deduped, never sends anything. The tester tests; the pack watches. |
+| **8 agent roles** (`agents/`) | orchestrator, recon, web tester, API tester, AI security tester, validator (independent repro), judge (evidence review), reporter — Halo bio grammar + an `hh:` security-role contract block, model-agnostic (`default` everywhere). |
+| **5 team lineups** (`teams/`) | web-app assessment, API security review, AI security review, cloud config assessment, finding validation + reporting. |
+| **16 playbooks** (`playbooks/`) | Declarative, schema-validated workflows across recon, discovery, validation, evidence, and reporting — with the approval gate mechanically enforced (any stage above `low-impact` must set `requires_approval: true`). Catalog: [PLAYBOOK_CATALOG.md](PLAYBOOK_CATALOG.md). |
+| **Schemas** (`schemas/`) | Engagement (signed scope, test window, accounts, rate limits, data locality), scope-targets, playbook, and finding — where `status: confirmed` is structurally impossible without independent reproduction and a reviewer decision citing evidence. |
+| **Findings store + reporting** (`tools/`) | Hash-chained evidence ledger with tamper detection and checkpoints, fail-closed writes, controlled withdrawal, and draft report generation from confirmed records only. |
+| **Scanner normalizers** (`tools/normalizers.py`) | Nuclei and Semgrep output → schema-valid **candidate** findings — scanner output is a candidate, never a confirmation. |
+| **Knowledge ingestion** (`ingest/`, `mcp/ingest_server.py`) | The ingestion MCP server (declared in `.mcp.json`, granted with `mcp:ingest`) plus the headless CLI (`cli.py`): local notes/Obsidian vaults, PDFs, GitHub files, YouTube subtitles → classify → distill → gated upsert into a provenance-ledger KB. Local model lane by default; hosted is explicit opt-in. |
+| **Communicate-findings skill** (`skills/communicate-findings/`) | The baked-in reporting doctrine (distilled SANS training, 13 sources — provenance in `resources/SOURCES-comm.md`): the reader model, ten rules, the four questions, the leadership-email shape, the full-report shape, and a mechanical pre-send checklist. No ingestion needed. |
+| **CVE enrichment** (`mcp/cve_server.py`) | A second MCP server (granted with `mcp:cve`): NVD 2.0 lookup with an unauthenticated rate pacer, CISA KEV checks (24 h cached), FIRST EPSS scores. Thin, stdlib-only, fail-never. |
+| **CVSS 3.1 scoring** (`tools/cvss31.py`) | Local, deterministic scoring: parse/validate vectors, base score + severity, one-call `score_vector`. Differential-verified 380/380 against the reference implementation. Findings store the vector; the score is always derived. |
+| **MITRE layer** (`tools/mitre_view.py`, `skills/attack-flow/`) | ATLAS 2026.10 ships in the pack; ATT&CK Enterprise caches on first use. Technique lookup/search, `technique_ids` on findings, and the attack-flow skill: per-finding mapping, the holistic engagement narrative, Navigator layer export, and capability-token chain candidates (projected vs demonstrated, always labeled). |
+| **Studio findings view** (`pack.yaml` studio, `tools/findings_view.py`) | A pack-declared Studio section: counts strip, findings table, and a lifecycle feed (`hh.finding` events). Display states: identified / reviewed / confirmed. |
+| **Report engine** (`reporting/`, `commands/hh-report.md`) | Leadership email (5-part shape, mailto link — the pack generates, never sends) and full findings report (exec summary first, parallel per-finding template, evidence appendices) — confirmed findings only, driven by the communicate-findings doctrine. |
+| **Engage-mode** (`tools/engage.py`, `hooks/`) | `/hh` engage/status/disengage: the engagement record as the boundary — one state file, fail-closed engage inside the test window, a pack hook gating shell commands against engagement scope. Scope as data, not location. |
+| **Findings import** (`tools/import_findings.py`) | Field-user intake: manual entry, pack-schema JSON, and scanner output (Nuclei/Semgrep) — everything enters as a **candidate** with provenance (source: import/scanner) and real ledger rows; an import can never arrive confirmed. |
+| **Passive traffic observer** (`tools/passive_checks.py`, `tools/traffic_observer.py`) | While a human tester works through Caido or Burp, the pack reads their proxy traffic (read-only polling) and surfaces **candidate** findings as they test: declarative checks (missing security headers, verbose banners, stack traces, internal IPs, cookie flags, reflected params), scope-gated, redaction applied before evidence, deduped, never sends anything. The tester tests; the pack watches. |
 
 ## What you supply — never bundled
 
@@ -169,20 +166,33 @@ the MCP server itself is standard-library-only (no MCP SDK — the SDK's
 
 ## Status
 
-0.7.0 — `halo pack inspect` reports `problems: none` (validated against
-halo 3.3.4.0 on 2026-10-29/30; 102+ tests green, CVSS differential-verified
-380/380 against the reference implementation). New in 0.7.0: CVE
-enrichment server, local CVSS 3.1 scoring, the MITRE layer (ATLAS shipped
-+ ATT&CK cached, attack-flow skill, technique_ids), the Studio findings
-view with hh.finding events, the report engine, engage-mode with the
-scope-guard hook, findings import, and the communicating-findings doctrine
-(0.6.0) it all reports through. The ingestion MCP server remains
-smoke-tested end-to-end over stdio JSON-RPC. A complete live assessment
-running through Halo has not
-yet been demonstrated in the published test results. See
-[pack/docs/IMPLEMENTATION_STATUS.md](pack/docs/IMPLEMENTATION_STATUS.md),
-[pack/COMPATIBILITY.md](pack/COMPATIBILITY.md), and
-[pack/docs/TEST_RESULTS.md](pack/docs/TEST_RESULTS.md).
+0.9.0 — **framework conformance**: the pack now uses the
+[Halo pack template](https://github.com/roloVibes/halo-pack-template) end to
+end. The repo root is the pack (so `halo pack sources add` + `halo pack
+install` work), the template's project files are in place (`HALO-PACK.md`,
+`CHANGELOG.md`, `tests/`, `.github/workflows/pack-test.yml`), and
+`/halo-hacker:hh` (engage / status / disengage) exists as a command instead of
+being prose. **Reinstall once** — an install recorded from `./halo-hacker/pack`
+points at a folder that no longer exists.
+
+Verified on this tree at 0.9.0: `halo pack test .` → **32 checks, 0 failed**
+(1 skip: this machine has no python runtime registered for the fleet
+capability), `halo pack inspect .` → `problems: none`, and the pack's own
+behaviour suite → **152 passed** (it was 39 failed before 0.9.0: the shipped
+engagement fixture carried a test window that expired 2026-11-04).
+
+Everything from the earlier releases still stands: the CVE enrichment server,
+local CVSS 3.1 scoring (differential-verified against the reference
+implementation), the MITRE layer (ATLAS shipped + ATT&CK cached, the
+attack-flow skill, technique_ids), the Studio findings view with `hh.finding`
+events, the report engine, engage-mode with the scope-guard hook, findings
+import, and the communicate-findings doctrine it all reports through. The
+ingestion MCP server is smoke-tested end-to-end over stdio JSON-RPC. A
+complete live assessment running through Halo has not yet been demonstrated in
+the published test results. See
+[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md),
+[COMPATIBILITY.md](COMPATIBILITY.md), and
+[docs/TEST_RESULTS.md](docs/TEST_RESULTS.md).
 
 ## License
 
@@ -236,7 +246,7 @@ an engagement (signed scope) ──▶ playbooks execute ──▶ candidates
 2. Create an **engagement** — a signed authorization record, exact
    in-scope targets, the testing window, approved test accounts, rate
    limits, and data-handling locality
-   (`pack/schemas/engagement.schema.json`).
+   (`schemas/engagement.schema.json`).
 3. The orchestrator decomposes the engagement into **playbook** tasks and
    delegates each to the right specialist role.
 4. Testers produce **candidate findings** — never confirmed ones. The
@@ -247,7 +257,7 @@ an engagement (signed scope) ──▶ playbooks execute ──▶ candidates
 
 ## Agent bios: the real grammar
 
-The eight roles (`pack/agents/hh-*.yaml`) are written in Halo's native
+The eight roles (`agents/hh-*.yaml`) are written in Halo's native
 agent-bio grammar, so Halo's own loaders, editors, Studio Roles view, and
 doctor handle them like any other agent. Each declares its model policy
 (`default` — never a hardcoded model; your lineup decides the lane), tool
@@ -260,7 +270,7 @@ validator), so the block round-trips through the real editor untouched.
 ## Playbook anatomy
 
 A playbook is versioned, declarative YAML validated against
-`pack/schemas/playbook.schema.json`, model-independent (a test rejects any
+`schemas/playbook.schema.json`, model-independent (a test rejects any
 playbook naming a model or vendor). Real example:
 
 ```yaml
@@ -296,12 +306,12 @@ raw observation → validated finding → report section
       ↑ gate            ↑ gate             ↑ gate
 ```
 
-- The finding **schema** (`pack/schemas/finding.schema.json`) carries a
+- The finding **schema** (`schemas/finding.schema.json`) carries a
   conditional constraint: `status: confirmed` is structurally impossible
   without `validation.status: reproduced`, `validation.independent: true`,
   and a `reviewer_decision` citing evidence refs. An agent asserting a
   finding is true cannot satisfy the schema.
-- `pack/tools/findings_store.py` additionally **resolves every confirmed
+- `tools/findings_store.py` additionally **resolves every confirmed
   finding's evidence references against the actual ledger rows** — a
   confirmed finding citing evidence that doesn't exist is refused, and a
   mismatched artifact hash is refused.
@@ -321,7 +331,7 @@ raw observation → validated finding → report section
 
 ## The ingestion engine
 
-`pack/ingest/` — one pipeline, four source adapters:
+`ingest/` — one pipeline, four source adapters:
 
 | Source | Adapter | Trust tier |
 |---|---|---|
@@ -343,14 +353,14 @@ never automatically authoritative as technical conclusions. Note content
 is data, never instructions (planted-injection regression suite); ambiguous
 writes are refused (refusal-biased).
 
-Entry points: `pack/mcp/ingest_server.py` (the in-session MCP tools,
+Entry points: `mcp/ingest_server.py` (the in-session MCP tools,
 `--selftest` — a stdio JSON-RPC server with no MCP SDK dependency) and
-`pack/cli.py` (headless, exit-code gated, refuses on error). Both share
-`pack/ingest/tools.py`; the vault resolves env var → pack config → refuse.
+`cli.py` (headless, exit-code gated, refuses on error). Both share
+`ingest/tools.py`; the vault resolves env var → pack config → refuse.
 
 ## Scanner normalizers
 
-`pack/tools/normalizers.py` turns Nuclei (`-jsonl`) and Semgrep (`--json`)
+`tools/normalizers.py` turns Nuclei (`-jsonl`) and Semgrep (`--json`)
 output into schema-valid **candidate** findings — deduped, provenance
 labeled, each carrying "scanner output is a candidate, never confirmation."
 They enter the same validation → judge → report pipeline as human
@@ -363,7 +373,7 @@ candidates.
 > knowledge → **halo-hacker**.
 
 Upstream gaps this pack depends on are tracked with rationale and interim
-workarounds in [pack/docs/CORE_REQUESTS.md](pack/docs/CORE_REQUESTS.md):
+workarounds in [docs/CORE_REQUESTS.md](docs/CORE_REQUESTS.md):
 the pack registry (CR-1 — SHIPPED in halo 3.2.0.0), Studio contribution
 registry (CR-2), fleet capabilities (CR-3), the tool-action broker hook
 (CR-4), the persistent supervisor (CR-5), a documented Caido interface
