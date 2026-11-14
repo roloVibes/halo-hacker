@@ -3,38 +3,40 @@
 # here is checked at install: `halo pack test .` runs every check.
 id: halo-hacker
 name: Halo Hacker
-version: 0.9.0
+version: 1.0.0
 description: >-
-  Authorized security assessment capability pack: eight specialized agent
-  roles, five assessment lineups, structured playbooks, engagement scope
-  policy, finding schemas, and evidence-driven reporting. Adds security
-  assessment to Halo; owns no runtime, routing, or orchestration of its own.
+  Authorized security assessment capability pack: compose your own testing
+  team from 30+ single-responsibility methodology agents, live proxy traffic
+  analysis (Caido/Burp), multi-project tracking for bug bounty workflows,
+  findings review/judge pipeline, attack-path mapping (MITRE ATT&CK/ATLAS),
+  SANS-trained finding communication, and evidence-driven reporting. Built
+  for Halo 3.6.0.0's Builder — describe what you need, get a working agent.
 author: Pinball Genie LLC (github.com/roloVibes)
 license: All rights reserved — Pinball Genie LLC (see /LICENSE)
 halo_api:
-  # The extension API version (halo_harness.ext.API_VERSION), not the Halo
-  # version. 1.1 is the floor for a pack that declares `requires` tools.
-  min: "1.1"
+  min: "1.4"
   max: "1.9"
 halo:
-  # First Halo version this pack is written for (pack test/doctor, API 1.1).
-  min: "3.3"
-# The capabilities this pack declares. A workflow's `prerequisites.capabilities`
-# and a stage's `needs:` must name one of these, and so must every name under
-# contributes.fleet.capabilities below.
+  min: "3.5"
 capabilities:
-  - agents        # 8 role bios contributed to the bio registry
-  - teams         # 5 lineup templates contributed to the template registry
-  - schemas       # engagement / scope / finding / playbook JSON Schemas (pack data files)
-  - policies      # engagement + broker policy definitions (docs + schemas)
-  - playbooks     # declarative testing workflows (catalog: see PLAYBOOK_CATALOG.md)
-  - ingestion     # the pack's own knowledge ingestion MCP server (mcp/ingest_server.py)
-  - halo-hacker.assessment  # the fleet advertisement (contributes.fleet below)
-# No external tools: every part is Python standard library, plus the network
-# that mcp:cve reaches (declared under permissions, not installed by anyone).
+  - agents
+  - templates
+  - teams
+  - workflows
+  - schemas
+  - policies
+  - playbooks
+  - ingestion
+  - traffic-analysis
+  - findings-review
+  - attack-paths
+  - multi-project
+  - communication
+  - halo-hacker.assessment
 requires: []
 contributes:
   agents:
+    # Built-in agents (8 monolithic roles, backward-compatible)
     - agents/hh-ai-security-tester.yaml
     - agents/hh-api-tester.yaml
     - agents/hh-judge.yaml
@@ -43,71 +45,234 @@ contributes:
     - agents/hh-reporter.yaml
     - agents/hh-validator.yaml
     - agents/hh-web-tester.yaml
+    # Methodology agent templates (40 single-responsibility, Builder starting points)
+    # Recon
+    - agents/hh-subdomain-enum.yaml
+    - agents/hh-port-scanner.yaml
+    - agents/hh-tech-fingerprint.yaml
+    - agents/hh-endpoint-discovery.yaml
+    - agents/hh-parameter-harvest.yaml
+    - agents/hh-content-discovery.yaml
+    # Auth/Session
+    - agents/hh-auth-flow-tester.yaml
+    - agents/hh-session-tester.yaml
+    - agents/hh-jwt-tester.yaml
+    - agents/hh-oauth-tester.yaml
+    - agents/hh-credential-tester.yaml
+    # Injection
+    - agents/hh-sqli-tester.yaml
+    - agents/hh-xss-tester.yaml
+    - agents/hh-command-injection.yaml
+    - agents/hh-ssti-tester.yaml
+    - agents/hh-xxe-tester.yaml
+    - agents/hh-deserialization.yaml
+    # Business logic
+    - agents/hh-idor-tester.yaml
+    - agents/hh-access-control.yaml
+    - agents/hh-race-condition.yaml
+    - agents/hh-payment-tester.yaml
+    - agents/hh-workflow-tester.yaml
+    # API
+    - agents/hh-rest-api-tester.yaml
+    - agents/hh-graphql-tester.yaml
+    - agents/hh-rate-limit-tester.yaml
+    - agents/hh-ssrf-tester.yaml
+    - agents/hh-cors-tester.yaml
+    # AI/LLM
+    - agents/hh-prompt-injection.yaml
+    - agents/hh-tool-abuse.yaml
+    - agents/hh-data-exposure.yaml
+    - agents/hh-model-manipulation.yaml
+    # Infrastructure
+    - agents/hh-cloud-config.yaml
+    - agents/hh-cicd-security.yaml
+    - agents/hh-network-tester.yaml
+    # Review pipeline
+    - agents/hh-review-validator.yaml
+    - agents/hh-review-judge.yaml
+    - agents/hh-communicator.yaml
+    - agents/hh-traffic-analyst.yaml
+    # Coordination
+    - agents/hh-manager.yaml
+    - agents/hh-reporter-template.yaml
   teams:
     - teams/hh-ai-security-review.yaml
     - teams/hh-api-security-review.yaml
     - teams/hh-cloud-config-assessment.yaml
     - teams/hh-finding-validation-reporting.yaml
     - teams/hh-web-app-assessment.yaml
+  workflows: []
   skills: skills
   commands: commands
   hooks: hooks/hooks.json
   mcp:
     - {name: ingest, description: knowledge ingestion into the provenance-ledger KB (local notes, PDFs, GitHub files, YouTube subtitles)}
     - {name: cve, description: NVD 2.0 lookup with a rate pacer, CISA KEV checks (24 h cached), FIRST EPSS scores}
+    - {name: traffic, description: real-time proxy traffic analysis (Caido/Burp) — start/stop watching, fetch recent pairs, get correlation suggestions for agents}
+  services:
+    - name: traffic-watch
+      description: Watches Caido or Burp proxy traffic for the active engagement
+      run: ["${halo_python}", "${CLAUDE_PLUGIN_ROOT}/mcp/traffic_server.py", "watch"]
+      autostart: false
+      restart: on-failure
+      health: {file: traffic-health.json, max_age_s: 120}
+      log: traffic-watch.log
   events:
-    - {kind: hh.finding, schema: events/hh.finding.json, description: one finding lifecycle moment (identified/reviewed/confirmed/terminal) — how the candidate entered and how far it has traveled}
+    - kind: hh.finding
+      schema: events/hh.finding.json
+      description: "one finding lifecycle moment (identified/reviewed/confirmed/terminal)"
+    - kind: hh.project.switch
+      description: "the active project or bug-bounty program changed"
+    - kind: hh.engagement.configured
+      description: "engagement scope, targets, or rules were updated"
+    - kind: hh.agent.activity
+      description: "an agent started, finished, or produced a finding"
+    - kind: hh.ingest.item
+      description: "an item was ingested into the knowledge base"
+    - kind: hh.alert
+      description: "an alert requiring human attention (finding, limit, traffic hit, scope edge)"
   studio:
     sections:
-      - id: halo-hacker
-        title: Halo Hacker
+      # Section 1: Findings — review/judge pipeline (first section, carries config_form)
+      - id: halo-hacker-findings
+        title: Findings
         blurb: Findings for the active engagement — identified, reviewed, confirmed.
         help: >-
-          The browser panel is the pack's own script (grant studio-script to
-          run it): every finding clickable — full detail, evidence, validation,
-          reviewer decision — with filters, search and live refresh. The counts
-          and table panels read the pack's data folder, written by
-          tools/findings_view.py on every store change (and by
-          `findings_view.py auto`). The feed shows hh.finding events.
+          Full review pipeline per finding: pipeline visualization,
+          validator verdict, judge decision, evidence chain, traffic
+          correlation. Filter by state, severity, or project.
         panels:
-          - id: browser
+          - id: findings-browser
             title: Findings browser
             kind: bundle
             source: studio/findings.js
             w: 24
             h: 120
             help: >-
-              Interactive findings browser: click a row (or Enter on a selected
-              row) for the full finding — description, evidence ledger rows,
+              Interactive findings browser with review pipeline: click a
+              finding for full detail — description, evidence ledger rows,
               validation, reviewer decision, remediation, audit history.
               Filter by severity/state/source, free-text search, copy as
-              markdown, open raw JSON. Refreshes on hh.finding events and
-              every 15s. Requires the studio-script grant.
-          - id: counts
+              markdown, open raw JSON. SSE-driven live updates.
+          - id: findings-counts
             title: Counts
             kind: table
             source: "data:findings/counts.json"
             columns: [engagement, identified, reviewed, confirmed]
             w: 24
             h: 12
-          - id: table
-            title: Findings
+          - id: findings-table
+            title: Table
             kind: table
             source: "data:findings/summary.json"
             columns: [finding_id, title, severity, state, target_ref, source, updated]
             w: 24
             h: 60
-          - id: feed
+          - id: findings-feed
             title: Lifecycle
             kind: events
             w: 24
             h: 40
-            help: "hh.finding events as they happen (tester, scanner, import, passive traffic)"
+            help: "hh.finding events as they happen"
+      # Section 2: Projects — multi-program switcher
+      - id: halo-hacker-projects
+        title: Projects
+        blurb: Switch between bug bounty programs and engagements.
+        help: >-
+          Manage multiple programs: switch active project, create new
+          engagements, archive completed ones. Each project has its own
+          findings, evidence, and state.
+        panels:
+          - id: projects-view
+            title: Projects
+            kind: bundle
+            source: studio/projects.js
+            w: 24
+            h: 120
+            help: >-
+              Program list with platform, finding count, and state.
+              Click to switch; the entire cockpit refreshes for that project.
+      # Section 3: Engagement — scope, rules, and tester identity
+      - id: halo-hacker-engage
+        title: Engagement
+        blurb: Configure the active engagement — objective, scope, rules, identity.
+        help: >-
+          Set objective, scope (targets and exclusions), test type, rules of
+          engagement, X-header for traffic marking, and tester identity.
+        panels:
+          - id: engage-form
+            title: Engagement setup
+            kind: form
+            w: 24
+            h: 160
+            help: >-
+              Objective, scope, test type, rules, X-header, tester name and
+              email for the active engagement. Saved to pack settings.
+      # Section 4: Live — real-time agent dashboard
+      - id: halo-hacker-live
+        title: Live
+        blurb: See every agent working in real time.
+        help: >-
+          Agent lanes with status, current task, and last tool call.
+          Traffic watch status, alert feed, and coverage map.
+        panels:
+          - id: live-dashboard
+            title: Agent dashboard
+            kind: bundle
+            source: studio/live.js
+            w: 24
+            h: 140
+      # Section 5: Ingest — knowledge ingestion visualization
+      - id: halo-hacker-ingest
+        title: Ingest
+        blurb: What was ingested — sources, topics, routing, coverage.
+        panels:
+          - id: ingest-view
+            title: Ingest dashboard
+            kind: bundle
+            source: studio/ingest.js
+            w: 24
+            h: 120
+      # Section 5: Attack Paths — MITRE ATT&CK / ATLAS
+      - id: halo-hacker-attack-paths
+        title: Attack Paths
+        blurb: Findings mapped to MITRE ATT&CK and ATLAS attack paths.
+        help: >-
+          Force-directed graph of findings connected by capability-token
+          chains. Demonstrated (solid) vs projected (dashed) paths.
+          ATT&CK and ATLAS heatmaps. Navigator layer export.
+        panels:
+          - id: attack-paths-graph
+            title: Attack path graph
+            kind: bundle
+            source: studio/attack-paths.js
+            w: 24
+            h: 160
     palette:
-      - {id: open-browser, label: Open the findings browser, action: "route:halo-hacker/browser"}
-      - {id: open-table, label: Open the findings table, action: "route:halo-hacker/table"}
-      - {id: open-lifecycle, label: Open the findings lifecycle feed, action: "route:halo-hacker/feed"}
+      - {id: open-findings, label: Open findings browser, action: "route:halo-hacker-findings/findings-browser"}
+      - {id: open-projects, label: Open projects, action: "route:halo-hacker-projects"}
+      - {id: open-engage, label: Open engagement setup, action: "route:halo-hacker-engage"}
+      - {id: open-live, label: Open live dashboard, action: "route:halo-hacker-live"}
+      - {id: open-ingest, label: Open ingest dashboard, action: "route:halo-hacker-ingest"}
+      - {id: open-attack-paths, label: Open attack paths, action: "route:halo-hacker-attack-paths"}
+    attention:
+      hh.alert.critical-finding:
+        label: "Critical finding"
+        keys: {a: review, r: dismiss, s: pause}
+      hh.alert.traffic-hit:
+        label: "Traffic hit"
+        keys: {a: review, o: ignore}
+      hh.alert.playbook-limit:
+        label: "Playbook limit"
+        keys: {a: extend, o: stop}
+      hh.alert.scope-boundary:
+        label: "Scope edge"
+        keys: {a: approve, r: deny}
+      hh.alert.suggestion:
+        label: "Agent suggestion"
+        keys: {a: investigate, o: dismiss}
     config_form: true
+  setup: []
   fleet:
     capabilities:
       - name: halo-hacker.assessment
@@ -122,22 +287,83 @@ contributes:
     mission:
       metadata:
         pack: halo-hacker
-  # schemas/, policies/, playbooks/ and resources/ are the pack's data files,
-  # read by its own tools and referenced from the bios — not registry
-  # contributions (nothing in Halo reads them directly).
 permissions:
-  - mcp:ingest    # the knowledge ingestion server (mcp/ingest_server.py)
-  - mcp:cve       # thin CVE enrichment (NVD 2.0 + CISA KEV + FIRST EPSS; mcp/cve_server.py)
-  - bash          # the PreToolUse scope guard classifies Bash commands against engagement scope
-  - hooks         # the pack contributes a PreToolUse hook (hooks/hooks.json)
-  - studio-script # the findings browser bundle panel (studio/findings.js)
+  - mcp:ingest
+  - mcp:cve
+  - mcp:traffic
+  - bash
+  - hooks
+  - studio-script
+  - network
+  - services
 config:
   schema:
     type: object
     properties:
       vault:
-        {type: string, description: "Where the knowledge base lives (the folder the provenance ledger and distilled entries are written under). When empty the server refuses every tool; set it with `halo config set packs.settings.halo-hacker.vault <path>` or the HALO_HACKER_VAULT env var."}
+        type: string
+        description: "Where the knowledge base lives (the folder the provenance ledger and distilled entries are written under). When empty the server refuses every tool."
+      active_project:
+        type: string
+        description: "The active project/program ID for multi-project tracking (bug bounty workflows)."
+      proxy:
+        type: string
+        enum: [caido, burp, none]
+        description: "The proxy to watch for real-time traffic analysis."
+      proxy_url:
+        type: string
+        description: "URL of the proxy API (defaults: Caido http://127.0.0.1:8080/graphql, Burp http://127.0.0.1:1337)."
+      objective:
+        type: string
+        description: "What the active engagement aims to test."
+      scope:
+        type: string
+        description: "In-scope targets (URLs, IP ranges) and exclusions."
+      test_type:
+        type: string
+        enum: [web-app, api, ai-security, cloud-config, network, custom]
+        description: "The type of penetration test."
+      rules:
+        type: string
+        description: "Rules of engagement: rate limits, off-limits hours, data handling."
+      x_header:
+        type: string
+        description: "Custom X-header for traffic marking (name and value, e.g. X-Pentest-ID: rolo-ukg-2026)."
+      tester_name:
+        type: string
+        description: "The tester's name, for traceability in findings and reports."
+      tester_email:
+        type: string
+        description: "The tester's email, for findings and bug bounty disclosure."
+      platform:
+        type: string
+        enum: [hackerone, bugcrowd, intigriti, custom]
+        description: "The bug bounty platform for this engagement."
     additionalProperties: false
   defaults:
     vault: ""
-migrations: []
+    active_project: ""
+    proxy: "none"
+    proxy_url: ""
+    objective: ""
+    scope: ""
+    test_type: "web-app"
+    rules: ""
+    x_header: ""
+    tester_name: ""
+    tester_email: ""
+    platform: "custom"
+migrations:
+  - from: "0.9.0"
+    to: "1.0.0"
+    note: >-
+      Halo Hacker 1.0.0 is a major redesign: 30+ single-responsibility
+      methodology agent templates replace the 8 monolithic agents (the
+      originals are kept as hh-*.yaml in agents/ for backward compatibility).
+      New capabilities: traffic analysis MCP, multi-project tracking,
+      attention alerts, attack-path visualization. The pack requires
+      halo_api 1.4+ and Halo 3.5+. Existing findings, evidence, and
+      configuration are preserved.
+      Action: reinstall — `halo pack remove halo-hacker` then
+      `halo pack sources add https://github.com/roloVibes/halo-hacker`
+      and `halo pack install halo-hacker`.

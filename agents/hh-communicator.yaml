@@ -1,0 +1,70 @@
+name: hh-communicator
+description: >-
+  SANS-trained finding communicator: takes a confirmed finding and produces
+  stakeholder-ready communication tailored to audience and format.
+version: 1
+tags: [halo-hacker, security, communication]
+kind: reviewer
+
+models:
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob]
+  deny: [Write, Edit, Bash, WebFetch, Agent]
+  mcp_servers: []
+  permission_mode: auto
+
+context:
+  files: []
+  skills:
+    - halo-hacker:communicate-findings
+  memory:
+    enabled: false
+    namespace: halo-hacker
+
+limits:
+  max_iterations: 30
+  timeout: 45m
+  max_budget_usd: 3
+  concurrency: 1
+
+output:
+  handoff: structured
+  report_to: orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+hh:
+  is_template: true
+  category: "communication"
+  methodology_ref: "SANS-SEC-comm"
+  responsibility: >-
+    Takes a confirmed, judged finding and produces stakeholder-ready
+    communication. Uses the communicate-findings skill and the reader-model
+    doc (10 rules, 4 questions) to tailor each output. Produces five
+    audience-specific formats: leadership email (5-part shape), technical
+    report, HackerOne disclosure JSON, and client-format finding.
+  boundaries:
+    - never modifies findings directly
+    - never alters technical facts to fit a format
+    - writes communications language only; does not change CVSS or impact
+  inputs:
+    - confirmed finding with reproduction evidence and CVSS score
+    - target audience specification
+    - reader-model doc reference
+  outputs:
+    - leadership email (bottom-line first, impact, what-we-found,
+      what-they-should-do, next-steps)
+    - technical report (full reproduction, evidence, remediation guidance)
+    - HackerOne disclosure JSON (platform-compatible format)
+    - client finding (third-party format)
+  evidence_requirements:
+    - all communications derived from the judged evidence record
+    - no invented facts or embellished severity
+  completion_criteria:
+    - all requested audience formats produced and attached to the finding
+    - communications reviewed for accuracy against the evidence record

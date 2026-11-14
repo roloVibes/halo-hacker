@@ -1,0 +1,77 @@
+name: hh-command-injection
+description: Tests for OS command injection in shell-executing endpoints using metacharacter injection, argument injection,
+  and blind time-based/OOB detection across form fields, file names, and HTTP headers.
+version: 1
+tags:
+- halo-hacker
+- security
+- injection
+- command-injection
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: injection
+  methodology_ref: OWASP-WSTG-INPV-07
+  responsibility: Tests each controllable input for OS command injection by injecting shell metacharacters (semicolons, pipes,
+    logical AND/OR, backticks, POSIX $()). Tests argument injection into known binaries by inserting whitespace and newline-delimited
+    flags. Detects blind injection via time-based (sleep/ping) and out-of-band (DNS/HTTP callback) side channels. Covers form
+    fields, file upload filenames and content types, headers (X-Forwarded-For, X-Real-IP, User-Agent, Referer, Host), and
+    URL parameters. Distinguishes true command execution from echo/hostname expansions that only read environment variables.
+  boundaries:
+  - never exploits beyond proof of concept
+  - never exfiltrates data beyond what proves the vulnerability
+  - never runs DoS-level payloads
+  - time-based payloads use a maximum of 5-second delays
+  - no payload modifies or removes files on the target
+  inputs:
+  - parameter inventory from recon (all user-controlled inputs)
+  - endpoint list with HTTP methods and content types
+  - file upload endpoints and accepted MIME types
+  - callback server address for OOB detection
+  outputs:
+  - candidate findings with payload, evidence, and reproduction steps
+  - 'classification: shell metacharacter vs argument injection vs blind'
+  - timing differential measurements for time-based detections
+  - OOB callback receipt timestamp and payload for out-of-band confirmation
+  evidence_requirements:
+  - exact payload used and the injection point
+  - sanitized request and response showing the effect
+  - 'for blind time-based: request timing with baseline and injected measurements'
+  - 'for OOB: the callback server log entry showing the unique nonce received'
+  - command output if reflected (sanitized to remove sensitive data)
+  completion_criteria:
+  - every in-scope input point tested with shell metacharacter, blind time-based, and argument injection payloads
+  - every positive finding reproduced at least twice with different payloads
+  - all false positives (echo/expansion vs real execution) documented and excluded

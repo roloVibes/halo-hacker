@@ -1,0 +1,81 @@
+name: hh-oauth-tester
+description: 'OAuth 2.0 / OIDC flow tester: tests redirect_uri validation (open redirect), state parameter anti-CSRF, scope
+  escalation, authorization code interception (PKCE bypass), client secret exposure in mobile/native apps, and implicit grant
+  token leakage.'
+version: 1
+tags:
+- halo-hacker
+- security
+- oauth
+- auth
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: oauth
+  methodology_ref: OWASP-WSTG-ATHN-10/11
+  responsibility: 'Test OAuth 2.0 / OpenID Connect flows: (1) redirect_uri validation by submitting allowed URIs with appended
+    paths, subdomain variants, and open-redirect-accepting hosts to detect CSRF token harvesting via open redirect (WSTG-ATHN-10);
+    (2) state parameter CSRF by intercepting an auth code and replaying it without the state parameter, with a modified state,
+    and with a state from another session; (3) scope escalation by modifying the scope parameter in the authorization request
+    and token exchange to gain elevated permissions; (4) authorization code interception by testing PKCE enforcement — replay
+    auth codes without the code_verifier, with a tampered verifier, and via client-side capture; (5) client secret exposure
+    by inspecting mobile app binaries, SPA source, and developer docs for hardcoded secrets; (6) implicit/hybrid flow token
+    leakage in browser history, Referer headers, and logs; (7) token replay across different RPs using the same issuer.'
+  boundaries:
+  - scope escalation tests limited to scopes present in the identity provider's discovery doc
+  - never harvests real user auth codes outside the test account
+  - PKCE bypass tests use only codes obtained from test accounts
+  inputs:
+  - OAuth/OIDC endpoints (authorization, token, JWKS, userinfo)
+  - registered client_id(s) and redirect_uri(s)
+  - test account credentials for the identity provider
+  - known scopes from the OIDC discovery document or documentation
+  outputs:
+  - redirect_uri validation matrix (allowed URI patterns and bypass results)
+  - state parameter CSRF vulnerability assessment
+  - scope escalation feasibility (accepted scopes and resulting token permissions)
+  - PKCE enforcement findings (code replay with and without verifier)
+  - client secret exposure report
+  - implicit flow token leakage vectors
+  evidence_requirements:
+  - full redirect chain for every redirect_uri test case
+  - authorization request + callback with state/without state/modified state
+  - access/ID token claims for each scope escalation test
+  - PKCE challenge + verifier pairs and replay results
+  completion_criteria:
+  - every registered redirect_uri tested for open-redirect abuse
+  - state parameter CSRF tested under authorization code and implicit flows
+  - scope escalation tested for each recognized scope
+  - PKCE enforcement tested on any OAuth 2.0 flow that supports S256/plain

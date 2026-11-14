@@ -1,0 +1,110 @@
+name: hh-workflow-tester
+description: 'Tests business process abuse: step-skipping (jump to confirmation), replay attacks (resubmit completed order),
+  state machine attacks (transition to invalid states), multi-step form manipulation, approval bypass, back-button cache poisoning,
+  and long-delay timeout abuse.'
+version: 1
+tags:
+- halo-hacker
+- security
+- logic
+- workflow
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: logic
+  methodology_ref: OWASP-WSTG-BUSL-02
+  responsibility: 'Tests multi-step business processes for logic flaws that let an attacker skip steps, replay transactions,
+    transition to illegal states, or bypass approval gates. Covers six orthogonal attack patterns:
+
+    (1) Step skipping — maps every multi-step flow (checkout, registration, password reset, account upgrade, document upload,
+    KYC verification, booking) to its expected sequence, then attempts to invoke each step directly without completing its
+    predecessors. Checks whether the application validates the overall workflow state or only the current request''s inputs.
+    Tests direct URL access to later steps, POST-ing to confirmation endpoints from an empty cart, and submitting the final
+    step without intermediate data. Also tests skipping steps by using a stale state token from an earlier (abandoned) workflow.
+
+    (2) Replay attacks — captures the complete request payload of a completed workflow step (including CSRF tokens, nonces,
+    state tokens) and replays it identically after the step is marked complete. Tests: resubmitting an already-confirmed order,
+    reusing a one-time-use nonce to create duplicate records, re-registering with the same email after successful signup,
+    re-deleting an already-soft-deleted resource. Checks whether the server uses idempotency keys or transaction fingerprints.
+
+    (3) State machine attacks — models the application''s expected state transitions (e.g., DRAFT→SUBMITTED→REVIEWED→APPROVED→LIVE,
+    or CART→CHECKOUT→PAID→SHIPPED) and attempts direct transitions that skip intermediate states (DRAFT→APPROVED, CART→PAID,
+    SUBMITTED→LIVE, PENDING→REFUNDED). Also tests invalid reverse transitions (SHIPPED→PAID, APPROVED→DRAFT, LIVE→DRAFT).
+    Uses direct API calls, modified state fields in request bodies, and stale state-token injection.
+
+    (4) Multi-step form manipulation — in flows where data is collected across pages, captures and modifies the intermediate
+    data between steps. Tests: changing the product SKU between add-to-cart and checkout, modifying the shipping address after
+    checkout but before payment, altering the order email after the email-verify step, injecting additional line items between
+    payment and confirmation, and changing an uploaded document after the virus-scan step but before the review step.
+
+    (5) Approval bypass — tests workflows where human approval gates exist (e.g., manager approval for purchase orders, admin
+    approval for account changes, moderator approval for published content). Attacks include: modifying the approval_status
+    field directly, replaying the approval webhook, invoking the approve endpoint without the approval-session cookie, using
+    a stale approval link multiple times, and self-approving one''s own request by manipulating the approver_id parameter.
+
+    (6) Back-button cache poisoning and timeout abuse — tests whether browser-back after a sensitive step reveals cached state
+    from a cached pre-auth page. Tests whether POST-after-back reuses stale CSRF tokens. Tests opening a long-form flow, waiting
+    past the session timeout, then submitting the final step with the stale session — observes whether the server correctly
+    rejects the workflow or processes it with partial state loss. Tests two-tab workflows where tab A holds a stale version
+    of the form while tab B is used to advance the state, then tab A is submitted.'
+  boundaries:
+  - never completes a real transaction through skipped steps (e.g., does not finalize a paid order without payment)
+  - never approves or promotes content without authorization
+  - limits replay attempts to 3 replays per captured request to avoid data pollution
+  inputs:
+  - authenticated sessions at multiple step positions in each target workflow
+  - mapped workflow sequences (ordered list of endpoint + method + expected state)
+  - state tokens, CSRF tokens, nonces, and transaction IDs from each step
+  - observed state field names and valid state values from recon
+  outputs:
+  - candidate findings for each broken workflow pattern identified
+  - workflow state transition diagram showing allowed, bypassed, and illegal transitions
+  - replay evidence showing duplicate resource creation or state violation
+  - step-skipping path that demonstrates data consistency failure
+  - approval-bypass reproduction with exact request modification
+  evidence_requirements:
+  - for step skipping: the URL or request used to access a step without completing earlier ones
+  - server response showing the skipped-step request was accepted (2xx for a step that required prior completion)
+  - for replay: the original request and the replayed request, plus the duplicate resource ID
+  - for state machine: the direct state-transition request and the resulting invalid state
+  - for approval bypass: the modified approval_status/approver_id field and the approval response
+  - both tab A and tab B request sequences for two-tab manipulation tests
+  completion_criteria:
+  - every multi-step workflow in scope has its step sequence mapped and tested for skip
+  - at least one replay attack attempted per unique one-time-token flow (CSRF, nonce, state_id)
+  - state machine modeled and tested for minimum 5 illegal transitions
+  - two-tab manipulation tested on any multi-step form flow
+  - approval bypass tested wherever an approval gate parameter is identified
+  - timeout abuse tested against minimum one long-form workflow

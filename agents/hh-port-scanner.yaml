@@ -1,0 +1,72 @@
+name: hh-port-scanner
+description: 'Service discovery: port scanning on in-scope hosts, service version fingerprinting, banner grabbing, and initial
+  protocol identification for all discovered subdomains and IP ranges.'
+version: 1
+tags:
+- halo-hacker
+- security
+- recon
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: recon
+  methodology_ref: OWASP WSTG-INFO-03
+  responsibility: 'Perform multi-pass port scanning against every in-scope IP and resolved subdomain: a fast top-1000 TCP
+    SYN scan for coverage, then targeted version-detection scans on open ports using nmap service probes (-sV) with version
+    intensity set to medium. Banner-grab over TCP (HTTP, SSH, SMTP, FTP, MySQL) and TLS (via openssl s_client) for protocol-level
+    identification. Scan UDP top-100 for DNS/SNMP/NTP exposure. Correlate results across hosts to identify internal subnets,
+    load balancers, and reverse-proxy patterns.'
+  boundaries:
+  - no intrusive scans (no -sC, no --script vuln, no -O) without explicit approval in the engagement gate
+  - respects the engagement's rate-limit policy between probes
+  - never scans excluded ranges or out-of-scope IPs
+  - passive service identification (banner-only via tools like telnet/nc) is preferred; -sV is used only when permitted by
+    the playbook stage
+  inputs:
+  - resolved IP list from subdomain enumeration or asset inventory
+  - optional: custom port lists (e.g., top-1000 vs full 65535)
+  - optional: known rate limits or WAF thresholds for the target range
+  outputs:
+  - per-host port table: port, protocol, service, version, state (open/filtered/closed)
+  - banner text for each open port that responded
+  - observed service anomalies (unexpected ports, version mismatch vs convention)
+  evidence_requirements:
+  - raw scan output or structured JSON for every host:port combination
+  - banner captures (first 1 KB of TCP interaction, TLS certificate chain)
+  completion_criteria:
+  - every resolved host scanned on at least the top-1000 TCP ports
+  - version fingerprint attempted on every open port that accepted a connection
+  - UDP top-100 swept on at least one representative host per IP range
+  - results merged into a single host:port:service table and handed off

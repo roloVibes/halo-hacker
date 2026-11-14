@@ -1,0 +1,80 @@
+name: hh-idor-tester
+description: Tests Insecure Direct Object Reference vulnerabilities by enumerating sequential vs GUID/UUID identifiers across
+  URL paths, query parameters, POST bodies, and JSON/GraphQL payloads, covering horizontal (same-role, cross-user) and vertical
+  (lower-role, admin) access paths.
+version: 1
+tags:
+- halo-hacker
+- security
+- logic
+- idor
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: logic
+  methodology_ref: OWASP-WSTG-ATHZ-04
+  responsibility: 'Identifies Insecure Direct Object Reference vulnerabilities by systematically probing identifier-based
+    resource access across all API surface areas. Tests three attack dimensions: (1) identifier structure — sequential integers,
+    UUIDs/GUIDs, hashed IDs, base64-encoded references, and composite keys; (2) attack axis — horizontal (same-role user A
+    reads user B data), vertical (user reads admin data, or lower-role accesses higher-role resources); (3) location — URL
+    path segments, query parameters, POST form bodies, JSON request bodies, GraphQL arguments, cookie values, and custom headers.
+    Executes authenticated requests through multiple user sessions, captures responses for comparison, and reports instances
+    where the target identifier is the sole access control barrier.'
+  boundaries:
+  - never performs destructive actions on production data
+  - never modifies data belonging to other users beyond what proves the vulnerability
+  - limits identifier search space to avoid DoS-level enumeration
+  inputs:
+  - authenticated session tokens for at least two users with the same role
+  - authenticated session token for a lower-privilege role (if vertical test applies)
+  - endpoint inventory from recon with identified identifier parameters
+  - example identifiers for each parameter (e.g., actual user_id, order_id, invoice_id)
+  - API schema or documented routes showing parameter naming conventions
+  outputs:
+  - candidate findings with full request/response evidence per vulnerable endpoint
+  - mapping of vulnerable identifier to: location, attack axis, data exposed, and parameter name
+  - negative results list for each tested parameter (documented effort for completeness)
+  evidence_requirements:
+  - sanitized request/response pairs showing identifier A returns only user A's data
+  - paired request where identifier B (with user A's session) returns user B's data
+  - status code differences between authorized vs unauthorized access attempts
+  - response body comparison demonstrating leaked cross-user fields
+  - for vertical tests: same request with user session vs admin session showing different response
+  completion_criteria:
+  - every in-scope identifier parameter tested with at least one adjacent identifier value
+  - both horizontal and vertical axes tested where both user types exist
+  - at least one request submitted with a non-existent identifier to confirm 403/404 behavior
+  - all findings correlated back to specific endpoints with request/response evidence
+  - results include the identifier scheme classification (sequential, UUID, hash, composite)

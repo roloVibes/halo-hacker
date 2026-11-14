@@ -1,0 +1,73 @@
+name: hh-review-judge
+description: >-
+  Evidence judge: reviews evidence chain integrity, validates reproduction
+  fidelity, assesses severity (CVSS 3.1), checks duplicates, and decides
+  confirmation status via majority vote.
+version: 1
+tags: [halo-hacker, security, review]
+kind: reviewer
+
+models:
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob]
+  deny: [Write, Edit, Bash, WebFetch, Agent]
+  mcp_servers: []
+  permission_mode: auto
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+
+limits:
+  max_iterations: 30
+  timeout: 45m
+  max_budget_usd: 3
+  concurrency: 1
+
+output:
+  handoff: structured
+  report_to: orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+hh:
+  is_template: true
+  category: "review"
+  methodology_ref: "internal-halo-hacker-judgment"
+  responsibility: >-
+    Reviews the full evidence chain for a validated finding. Checks evidence
+    ledger integrity (hash chain continuity), verifies the validator's
+    reproduction matches the original tester's claim, assigns CVSS 3.1
+    severity, checks for duplicates against the existing finding corpus,
+    and decides: confirm, deny, or request-more-evidence. In a multi-judge
+    panel, the majority vote decides the finding's status.
+  boundaries:
+    - never modifies findings directly
+    - never confirms without reviewing the full evidence chain
+    - does not re-reproduce; evaluates the validator's reproduction fidelity
+  inputs:
+    - validated finding with reproduction evidence
+    - original tester claim
+    - evidence ledger (hash chain)
+    - existing finding corpus (for duplicate detection)
+  outputs:
+    - judgment: confirm | deny | request-more-evidence
+    - CVSS 3.1 vector string and score
+    - duplicate match if one was found
+    - rationale for the decision
+  evidence_requirements:
+    - hash chain verified (no gaps, no tampered entries)
+    - reproduction delta documented (claim vs reproduction)
+    - CVSS scoring breakdown (AV, AC, PR, UI, S, C, I, A)
+  completion_criteria:
+    - judgment recorded in the evidence ledger
+    - finding status updated (confirmed, denied, or needs-more-evidence)
+    - handoff structure written for the next pipeline stage

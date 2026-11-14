@@ -1,0 +1,99 @@
+name: hh-race-condition
+description: Tests race conditions across TOCTOU windows, parallel request races (coupon double-use, inventory oversell, limit
+  overrun), payment race windows, referral credit races, and rate-limit bypass via concurrent request flooding.
+version: 1
+tags:
+- halo-hacker
+- security
+- logic
+- race-condition
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: logic
+  methodology_ref: OWASP-WSTG-BUSL-05
+  responsibility: 'Identifies time-of-check-time-of-use (TOCTOU) and parallel execution race conditions by launching nearly
+    simultaneous requests against resource-modifying endpoints. Targets five race windows:
+
+    (1) TOCTOU — finds endpoints where the application checks a condition (balance, stock, coupon validity, one-time flag)
+    then performs an operation on the same resource without holding a lock or using a transaction. Tests by sending the check
+    and the use request in overlapping windows.
+
+    (2) Parallel request races — sends 5–20 concurrent copies of the same mutating request (add coupon, claim bonus, withdraw
+    funds, redeem reward) and checks whether the backend correctly serializes or double-counts. Validates by comparing the
+    final resource state against the expected single-operation result. Key targets: coupon application, loyalty-point redemption,
+    one-time promo code usage, email-update confirmation, invite-code consumption.
+
+    (3) Payment race windows — sends the payment-confirm request concurrently with a cancel/refund/modify request for the
+    same order. Tests whether the system processes both actions (order confirmed AND refunded, or product shipped AND order
+    voided). Also tests tab-opening pattern: open checkout in two browser sessions, submit payments simultaneously for the
+    same one-item inventory.
+
+    (4) Referral credit races — during signup flows that award referrer credit, sends concurrent referrer-submission requests
+    to see if the system double-credits. Tests referral-code enumeration combined with race to claim credit for the same referred
+    user across multiple referrers.
+
+    (5) Rate-limit bypass — determines the per-endpoint rate limit by probing at increasing frequencies, then sends the request
+    in an N-wide concurrent burst (N = discovered limit × 2) to check whether the window resets after the burst passes rather
+    than per-request.
+
+    Uses sub-second concurrency via curl pipelining or parallel shell (xargs -P, GNU parallel, or background-subshell batch)
+    with timing analysis comparing request duration against the action''s effect window.'
+  boundaries:
+  - never performs destructive actions that permanently corrupt shared data
+  - caps concurrent request batch size at 20 to avoid unintentional DoS
+  - avoids cash-drain race patterns against live payment processors without explicit authorization
+  inputs:
+  - authenticated sessions (one per user account involved in the race target)
+  - identified race-prone endpoints from recon (coupons, bonuses, credits, inventory, transfers)
+  - resource identifier for each test (coupon code, product SKU, referral code, reward ID)
+  - baseline timing measurements for each endpoint (mean response time, stddev)
+  outputs:
+  - candidate findings for each confirmed race condition with reproduction steps
+  - timing measurements showing the race window duration where measurable
+  - concurrent-request payloads and sequences that reproduce the race
+  - negative results documenting endpoints tested but not vulnerable (with batch size and timing)
+  evidence_requirements:
+  - full request/response pairs for ALL concurrent requests in the race batch
+  - final resource state showing doubled consumption or inconsistent count
+  - before/after comparison of the raced resource (stock level, balance, coupon-use flag)
+  - timestamps or sequence diagrams showing request overlap within the window
+  - confirmation that the condition alone (without concurrency) does NOT reproduce the issue
+  completion_criteria:
+  - every inventory-sensitive endpoint tested with a batch of 5+ concurrent requests
+  - TOCTOU window measured on minimum one check-then-modify endpoint pair
+  - rate-limit bypass attempted on at least 3 distinct endpoints
+  - referral/credit race tested on any referral or invite flow
+  - each positive finding confirmed with a clean reproduction that works with batch size ≥ 3

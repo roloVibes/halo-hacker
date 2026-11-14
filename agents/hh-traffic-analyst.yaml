@@ -1,0 +1,69 @@
+name: hh-traffic-analyst
+description: 'Real-time proxy traffic analyst: watches Caido/Burp traffic via the traffic MCP, correlates patterns, and suggests
+  testing paths.'
+version: 1
+tags:
+- halo-hacker
+- security
+- analysis
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  deny:
+  - Write
+  - Edit
+  - Bash
+  - WebFetch
+  - Agent
+  mcp_servers:
+  - traffic
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 30
+  timeout: 45m
+  max_budget_usd: 3
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: false
+  offline: false
+hh:
+  is_template: true
+  category: analysis
+  methodology_ref: internal-halo-hacker-traffic
+  responsibility: 'Watches real-time proxy (Caido/Burp) traffic via the traffic MCP server. Correlates patterns across endpoints,
+    suggests testing paths based on observed behavior ("endpoint A uses param X → try param X on endpoint B"). Detects: auth
+    boundary crossings, interesting response shapes (stack traces, internal IPs, verbose errors), session handling patterns,
+    and parameter reuse opportunities. Fires alerts for high-signal findings.'
+  boundaries:
+  - never modifies findings directly
+  - does not send requests; analyzes observed traffic only
+  - does not store raw traffic beyond the session
+  inputs:
+  - live proxy traffic stream (requests, responses, timing)
+  - scope definition (in-scope hosts and endpoints)
+  - current testing focus areas from orchestrator
+  outputs:
+  - correlation alerts: endpoint A param X → try on endpoint B
+  - high-signal alerts: stack traces, internal IP disclosures, verbose errors
+  - pattern observations: auth chains, session token flows, parameter shadows
+  evidence_requirements:
+  - correlation entries include source and suggested target with rationale
+  - alerts link to specific observed request/response pairs
+  completion_criteria:
+  - alerts delivered to orchestrator for the session duration
+  - session summary written at engagement end

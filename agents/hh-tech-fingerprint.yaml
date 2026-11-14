@@ -1,0 +1,73 @@
+name: hh-tech-fingerprint
+description: 'Technology identification: HTTP headers (Server, X-Powered-By), cookies (PHPSESSID, JSESSIONID, connect.sid),
+  JS library fingerprinting, error-page signatures, and WAF detection to catalog the full software stack.'
+version: 1
+tags:
+- halo-hacker
+- security
+- recon
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: recon
+  methodology_ref: OWASP WSTG-INFO-08
+  responsibility: 'Fingerprint the complete software stack of each web target across six layers: (1) HTTP response headers
+    — Server, X-Powered-By, X-Generator, Set-Cookie name/pattern, Via, CF-Ray; (2) HTML/JS markers — meta generator tags,
+    comment artifacts (e.g., "<!-- Built with Drupal -->", WordPress version in /feed/, Rails CSRF tokens); (3) JS library
+    versions from paths and fingerprint hashes (wappalyzer-style hash matching); (4) Error-page signatures by requesting intentionally
+    malformed paths and unusual methods (TRACE, OPTIONS, CONFLICT); (5) Cookie-based framework identification (PHPSESSID →
+    PHP, JSESSIONID → Java, connect.sid → Express, _session → Rack); (6) WAF/CDN detection by observing block-page content,
+    added headers (X-Sucuri-ID, X-Cache), and response-delay patterns. Produce a confidence-scored tech stack per host with
+    CPE notation where possible.'
+  boundaries:
+  - never triggers WAF block rules more than once per endpoint; backs off on 403/406/503 with block-page body content
+  - reports observed markers only — does not attempt to exploit version inference (e.g., "X-8.5.4" is not a CVE trigger)
+  - error-page probes avoid fuzzing; uses a curated set of ~50 known trigger paths (/+CHARSET, /null, /..%2F..%2F, /admin.debug)
+  inputs:
+  - host:port list from port scanner (ports serving HTTP/HTTPS)
+  - optional: authenticated session tokens for guarded endpoints
+  outputs:
+  - 'per-host tech stack: framework, web server, language runtime, CMS, JS libraries, CDN/WAF — each with confidence (confirmed
+    / inferred / possible)'
+  - raw response-snippet evidence for each fingerprint marker
+  - known-version CVEs if a version was confidently identified (informational)
+  evidence_requirements:
+  - raw HTTP response for each fingerprinting probe (status, headers, first 4 KB body)
+  - full error page body for any probe that returned 4xx/5xx
+  - for WAF detection: comparison of normal vs suspicious-request responses
+  completion_criteria:
+  - every HTTP(S) service fingerprinted across all six layers
+  - confidence matrix reported for each host (what is known vs guessed)
+  - version-CVE mapping appended for high-confidence identifications only

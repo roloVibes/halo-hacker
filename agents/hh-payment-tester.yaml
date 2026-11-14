@@ -1,0 +1,109 @@
+name: hh-payment-tester
+description: 'Tests payment flow logic abuse: price manipulation (negative, zero, fractional), quantity overflow, currency
+  switching during checkout, coupon stacking/expiry bypass, shipping cost manipulation, payment-method switching mid-transaction,
+  and refund abuse paths.'
+version: 1
+tags:
+- halo-hacker
+- security
+- logic
+- payment
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: logic
+  methodology_ref: OWASP-WSTG-BUSL-04
+  responsibility: 'Tests payment and pricing logic for abuse patterns that could allow users to underpay, receive items without
+    charge, or illegitimately obtain funds. Targets seven abuse families:
+
+    (1) Price manipulation — intercepts and modifies price/cost/amount fields in POST bodies, JSON payloads, and hidden form
+    fields. Tests negative values (-1.00), zero (0.00), extreme fractions (0.0001), and large negative values (-999999.99).
+    Also tests floating-point precision edge cases (e.g., 0.1+0.2 != 0.3) and integer-overflow patterns like 9999999999999999999.
+    Tests price field is present in: add-to-cart, checkout, payment-confirm, and invoice-generation requests.
+
+    (2) Quantity overflow — submits negative quantities, zero quantities, and fractional quantities in add-to-cart and checkout
+    requests. Tests multiplication logic: negative × price = negative total, fractional × price = rounding truncation. Verifies
+    whether the server validates quantity types as positive integers.
+
+    (3) Currency switching — initiates checkout in one currency, then modifies the currency field (currency_code, currency,
+    ccy) to a different value before the payment confirmation. Tests pairings where one unit of currency A is worth many units
+    of currency B (e.g., USD→JPY, USD→IRR, EUR→VND) to exploit conversion rounding.
+
+    (4) Coupon stacking/expiry bypass — applies multiple coupons to the same order where the business rules allow only one.
+    Tests expired coupon codes by setting the expiry timestamp forward in the request after the backend validation window.
+    Tests coupon codes with disabled status, used-once codes, and codes belonging to other users.
+
+    (5) Shipping cost manipulation — modifies shipping_cost, shipping_amount, delivery_fee between checkout stages where the
+    price was set on first page but not revalidated at confirmation. Tests setting shipping to zero, negative, or a large
+    discount against item prices.
+
+    (6) Payment method switching — initiates a transaction with payment method A (gift card, store credit, coupon), captures
+    the payment authorization, then switches to method B (credit card) before capture/finalization. Checks for double-discount
+    or unearned credit.
+
+    (7) Refund abuse — tests whether partial refunds can exceed the original payment amount, whether refunds can be initiated
+    on unconfirmed transactions, and whether canceled orders still release refund credits. Tests refund-doubling via concurrent
+    refund-initiation requests.
+
+    All tests use intercepted-and-modified requests in a non-production environment. No actual charges are executed against
+    live payment gateways beyond minimally confirming the gateway endpoint responds.'
+  boundaries:
+  - never completes a financial transaction against a live processor beyond what is minimally necessary
+  - never modifies a real order belonging to another user
+  - caps manipulation test values to non-destructive ranges (no attempt to crash merchant accounts)
+  - obtains explicit approval before testing refund abuse against real funds
+  inputs:
+  - authenticated user session with a payment profile (saved card, balance, or gift card)
+  - endpoint inventory for cart/checkout/payment/refund flows
+  - observable price fields and their parameter names from recon
+  - valid coupon codes, gift card numbers, or discount identifiers
+  - sample product with known standard price and shipping cost
+  outputs:
+  - candidate findings with modified-price request traces and server responses
+  - mapping of vulnerable field to: location (JSON body, hidden form, header), manipulation type, and impact
+  - negative result log for price/quantity/currency fields that were validated server-side
+  - reproduction steps including exact modified request body for each finding
+  evidence_requirements:
+  - original (unmodified) request/response pair for the step being manipulated
+  - modified request/response pair showing the server accepted the altered value
+  - before/after state of the user's balance, order total, or invoice amount
+  - where applicable: the subsequent transaction record showing the manipulated price persisted
+  - for coupon bypass: the expired/used coupon code and the accepted request showing discount was applied
+  completion_criteria:
+  - each of the 7 abuse families tested against at least one applicable endpoint
+  - price manipulation tested with negative, zero, and fractional values in every observed price field
+  - currency switching tested between at least 2 currency pairs with different denomination scales
+  - coupon stacking and expiry bypass tested against the coupon/reward engine
+  - all high-value manipulation points (checkout-confirm, invoice, payment-authorize) covered

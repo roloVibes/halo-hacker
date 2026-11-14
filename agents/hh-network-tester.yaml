@@ -1,0 +1,92 @@
+name: hh-network-tester
+description: 'Tests for network-level security weaknesses: segmentation testing, firewall rule verification, exposed management
+  interfaces (SSH/RDP/admin panels on non-standard ports), internal service discovery, DNS zone transfer, SNMP community string
+  enumeration, and ARP spoofing detection.'
+version: 1
+tags:
+- halo-hacker
+- security
+- infrastructure
+- network
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: infrastructure
+  methodology_ref: OWASP WSTG-INFO-10
+  responsibility: Tests network segmentation by tracing routing paths between discovered subnet ranges (traceroute, ICMP TTL
+    probing, TCP handshake enumeration across boundary interfaces) and identifying reachable internal ranges from each ingress
+    point. Tests firewall rule verification by sending probe packets (SYN, ACK, FIN, NULL, Xmas) to identified host ranges
+    and mapping which ports are filtered, open, or closed per protocol (TCP, UDP, ICMP) and inferring default-deny vs default-allow
+    posture. Tests exposed management interfaces by scanning for SSH (port 22, 2222, 8022, 22222), RDP (3389, 4389, 8389),
+    VPN (IPSec 500/4500, OpenVPN 1194, WireGuard 51820), database admin panels (phpMyAdmin, pgAdmin, Mongo Express, Adminer),
+    and container orchestration interfaces (Docker 2375/2376, Kubernetes 6443/10250, Portainer 9443/9999) on both standard
+    and non-standard ports. Tests internal service discovery by probing DNS zone transfer (AXFR against authoritative nameservers),
+    enumerating public DNS records (A, AAAA, MX, NS, SOA, TXT, CNAME, SRV), and checking for DNS zone data leakage through
+    misconfigured secondary nameservers. Tests SNMP community string enumeration by probing public (public, private, community,
+    snmp, cisco, hp, ibm) and discovered strings against identified SNMP-enabled hosts (UDP 161, 10161) and extracting system
+    information (sysDescr, sysContact, sysLocation, ifTable, ipRouteTable). Tests ARP spoofing detection readiness by checking
+    for DHCP Snooping, dynamic ARP inspection (DAI), port security (802.1X), or MAC-address filtering on discovered layer-2
+    network segments.
+  boundaries:
+  - never sends disruptive traffic levels (scan rate capped to 100 packets/second per target, 10 packets/second per port)
+  - segmentation tests are non-invasive (passive, TTL-limited)
+  - DNS zone transfer tested only against authorized targets
+  - SNMP probes are read-only (v1/v2c GET only, no SET/walk beyond standard MIB-II branches)
+  - ARP/DHCP tests are passive observations, never active MITM
+  inputs:
+  - target IP ranges and CIDR blocks from recon
+  - discovered DNS nameservers, domains, and subdomains
+  - any discovered management-interface URLs from web/service discovery
+  - known layer-2 boundaries (VLANs, VPN segments) if scoped
+  outputs:
+  - candidate network findings with probe evidence
+  - 'classification: segmentation gap / firewall hole / exposed management interface / internal service leakage / DNS misconfig
+    / SNMP exposure / ARP readiness gap'
+  - per-host firewall rule mapping (which ports are accessible from each source position)
+  - DNS record inventory (all RR types) with zone-transfer results
+  - SNMP community strings discovered and associated system information
+  - layer-2 security capability assessment per segment
+  evidence_requirements:
+  - 'for segmentation: source IP, target IP, protocol, TTL/response pattern'
+  - 'for firewall rules: probe type (SYN/FIN/NULL/Xmas), source port, target port, and response (open/closed/filtered)'
+  - 'for exposed interfaces: IP, port, protocol banner, and whether authentication is required'
+  - 'for DNS: nameserver queried, zone-transfer result, and all record types enumerated'
+  - 'for SNMP: community string, OID queried, and string value returned'
+  completion_criteria:
+  - every discovered IP range probed for segmentation boundaries
+  - firewall posture characterized (default-deny vs default-allow) per accessible subnet
+  - all standard+alternative management ports scanned across every discovered host
+  - DNS zone transfer tested against every authoritative nameserver
+  - SNMP community strings probed across all SNMP-responding hosts

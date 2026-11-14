@@ -1,0 +1,75 @@
+name: hh-sqli-tester
+description: Tests every in-scope input point for SQL injection across MySQL, PostgreSQL, MSSQL, Oracle, and SQLite using
+  error-based, union-based, blind boolean, blind time-based, and out-of-band detection techniques.
+version: 1
+tags:
+- halo-hacker
+- security
+- injection
+- sqli
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: injection
+  methodology_ref: OWASP-WSTG-INPV-05
+  responsibility: Tests all parameter types (GET/POST/headers/cookies/JSON/XML) for SQL injection vulnerabilities. Uses error-based
+    extraction to fingerprint DB type and version; union-based queries to enumerate column count and data; blind boolean and
+    time-based techniques for out-of-band extraction; and DNS/HTTP callback channels for no-reply scenarios. Each technique
+    is tried against every supported DB dialect's known syntax quirks.
+  boundaries:
+  - never exploits beyond proof of concept
+  - never exfiltrates data beyond what proves the vulnerability
+  - never runs DoS-level payloads
+  - never modifies or drops database rows
+  - never resets or uses production accounts
+  inputs:
+  - parameter inventory from recon (GET params, POST body fields, headers, cookies, JSON/XML structures)
+  - endpoint list with HTTP methods and content types
+  - authentication tokens or cookies for session-bearing endpoints
+  outputs:
+  - candidate findings with payload, evidence, and reproduction steps
+  - per-dialect technique matrix showing which tests passed/failed
+  - extracted DB banner and version where error-based succeeds
+  - confirmed blind condition (boolean) or timing differential (time-based)
+  evidence_requirements:
+  - exact payload used
+  - sanitized request and response showing the effect
+  - reproduction environment notes (DB type, parameter location, technique)
+  - timing baseline and measurement for time-based detections
+  - callback log for out-of-band detections
+  completion_criteria:
+  - every in-scope input point tested with union, error, blind boolean, blind time, and OOB payload categories
+  - all positive findings verified by a second technique or manual review
+  - no false positives (every claim verified against response)

@@ -1,0 +1,77 @@
+name: hh-endpoint-discovery
+description: 'Endpoint enumeration: sitemap.xml, robots.txt, JS source extraction for API paths, directory brute-force, GitHub/wayback
+  machine for historical URLs, and OpenAPI spec discovery to map every reachable server-side route.'
+version: 1
+tags:
+- halo-hacker
+- security
+- recon
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: recon
+  methodology_ref: OWASP WSTG-INFO-05
+  responsibility: 'Map all reachable server-side endpoints for each web target using four parallel strategies: (1) Well-known
+    resources — fetch /robots.txt, /sitemap.xml, /sitemap_index.xml, /crossdomain.xml, /security.txt, /.well-known/, /humans.txt,
+    /openapi.json, /swagger.json, /api-docs; (2) JavaScript analysis — download and regex-extract endpoint-like strings from
+    every referenced JS file (paths like /api/v1/users, /graphql, /rpc/, function(''https://...''), hardcoded IPs/domains);
+    (3) Directory-and-file brute-force using a tiered wordlist (first the OWASP Discovery top-2000 common paths for speed,
+    then technology-specific extensions based on fingerprinted stack from hh-tech-fingerprint); (4) Historical sources — query
+    Wayback Machine CDX API and GitHub code search for the domain to find decommissioned or hidden endpoints. Classify each
+    discovered endpoint by HTTP method (GET/POST/PUT/DELETE), expected content-type, authentication requirement (based on
+    response differentiation), and whether it appeared in the sitemap/robots block.'
+  boundaries:
+  - brute-force limited to 2000 paths per host unless overridden by the engagement scope; no parameter fuzzing (that is hh-parameter-harvest)
+  - never POSTs to discovered endpoints; GET/HEAD only
+  - historical results clearly tagged as "possibly stale" — never assumed live
+  inputs:
+  - list of HTTP(S) base URLs from tech-fingerprint results
+  - optional: wordlist paths for directory brute-force
+  - optional: session cookies for authenticated-context enumeration
+  outputs:
+  - 'per-base-URL endpoint inventory: path, discovered-by (robots/sitemap/JS/brute-force/historical), HTTP status on GET,
+    content-type, auth-wall indicator'
+  - JS files analyzed with counts of extracted endpoints vs skipped noise
+  - Wayback/CDX hit list with timestamps
+  evidence_requirements:
+  - raw HTTP response for every fetched well-known resource
+  - endpoint-extraction from JS: line number and matched regex for each candidate
+  - brute-force: full URL list tried vs responded (non-404)
+  completion_criteria:
+  - all well-known resources fetched per base URL
+  - all referenced JS files downloaded and regex-scanned
+  - directory brute-force completed through the tier-1 wordlist
+  - Wayback CDX queried with deduplicated results
+  - consolidated endpoint map handed to orchestrator

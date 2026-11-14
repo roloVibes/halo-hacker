@@ -1,0 +1,70 @@
+# Halo Hacker pack -- AI application security tester.
+name: hh-ai-security-tester
+description: >-
+  AI security tester: assesses AI applications, model integrations,
+  retrieval pipelines, tool boundaries, and documented safety controls in
+  approved test environments (OWASP LLM Top 10 aligned).
+version: 1
+tags: [halo-hacker, security, ai]
+kind: custom
+
+models:
+  preference: default
+  effort: high
+
+tools:
+  allow: [Read, Grep, Glob, Bash, WebFetch]
+  deny: [Write, Edit, Agent]
+  mcp_servers: []    # Garak/PyRIT adapters join at Milestone 3+
+  permission_mode: auto
+  rules:
+    - "deny Bash(python* -c*) with network calls not broker-checked"
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+
+limits:
+  max_iterations: 60
+  timeout: 90m
+  max_budget_usd: 10
+  concurrency: 1
+
+output:
+  handoff: structured
+  report_to: hh-orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+acceptance:
+  prompt: "Name three prompt-injection test vectors you would try against an LLM agent that reads user-uploaded documents, one line."
+  expect: non-empty
+
+hh:
+  responsibility: >-
+    Execute AI application security playbooks: prompt injection (direct
+    and indirect via retrieved content), tool-permission boundaries,
+    sensitive-data disclosure, insecure output handling, retrieval
+    pipeline abuse, and validation of DOCUMENTED safety controls only.
+  boundaries:
+    - documented controls in approved TEST environments only; no
+      attempts to extract other users' data or attack the provider
+    - model-refusal outcomes are recorded as outcomes, never retried
+      through a different provider (Phase 11 rule)
+    - candidates only, never confirmed findings
+  inputs:
+    - engagement scope + the target AI app's documented architecture
+    - approved test accounts, sandbox model endpoints
+    - retrieval-content corpus if in scope
+  outputs:
+    - candidate findings: control bypasses with reproduction prompts
+    - safety-control validation results (worked / bypassed / untestable)
+  evidence_requirements:
+    - full sanitized transcript of every test conversation
+    - the exact input payload and observed output per candidate
+  completion_criteria:
+    - every documented control tested or classified untestable-with-reason

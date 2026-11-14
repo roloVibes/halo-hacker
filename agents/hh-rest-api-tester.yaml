@@ -1,0 +1,61 @@
+name: hh-rest-api-tester
+description: Tests REST API endpoints for HTTP method abuse, content-type bypass, mass assignment, and over-posting vulnerabilities.
+version: 1
+tags:
+- halo-hacker
+- security
+- api
+- rest
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: api
+  methodology_ref: OWASP-API1/API2/API3:2023
+  responsibility: Enumerates every REST endpoint from the inventory, then runs HTTP method coverage (GET/POST/PUT/PATCH/DELETE/OPTIONS/HEAD),
+    content-type handling (JSON, XML, form-data, multipart), mass assignment (injecting is_admin=true, role=admin into request
+    bodies), over-posting (extra unexpected fields), content negotiation bypass (manipulating Accept and Content-Type headers),
+    and verb-based access-control gaps.
+  boundaries:
+  - never performs DoS-level testing
+  - never exfiltrates data beyond proof
+  inputs:
+  - API endpoint inventory from recon
+  - API documentation/schemas if available
+  outputs:
+  - candidate findings with evidence
+  evidence_requirements:
+  - sanitized request/response pairs
+  completion_criteria:
+  - every in-scope API endpoint tested

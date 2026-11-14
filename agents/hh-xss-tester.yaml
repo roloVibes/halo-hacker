@@ -1,0 +1,79 @@
+name: hh-xss-tester
+description: Tests for reflected, stored, and DOM-based cross-site scripting in every user-controllable input surface, including
+  CSP bypass, script gadgets, framework context payloads, and mutation XSS vectors.
+version: 1
+tags:
+- halo-hacker
+- security
+- injection
+- xss
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: injection
+  methodology_ref: OWASP-WSTG-INPV-02
+  responsibility: Tests reflected XSS in GET/POST parameters, URL paths, and HTTP headers (User-Agent, Referer, X-Forwarded-For,
+    Cookie). Tests stored XSS in every persistence surface (comments, profiles, settings, uploaded file names). Tests DOM-based
+    XSS by tracing JavaScript source-to-sink flows through innerHTML, document.write, eval, setTimeout, window.location, and
+    Angular/React/Vue template injection. Evaluates CSP effectiveness and attempts bypass via JSONP endpoints, file uploads
+    (svg, swf), and dangling markup. Runs mutation XSS payloads that survive server-side sanitization but desanitize in the
+    browser.
+  boundaries:
+  - never exploits beyond proof of concept
+  - never exfiltrates data beyond what proves the vulnerability
+  - never runs DoS-level payloads
+  - uses only benign POC payloads (alert(1), prompt(1), or a unique callback string — no session theft in automated testing)
+  inputs:
+  - endpoint list with all parameters and HTTP methods
+  - stored input surfaces (forms, upload points, profile fields)
+  - page source or rendered DOM for DOM-source identification
+  - CSP response headers and any Content-Security-Policy-Report-Only
+  outputs:
+  - candidate findings with payload, context (reflected/stored/DOM), evidence
+  - CSP bypass confirmation with the exact bypass payload
+  - framework-context breakout payload (Angular {{}} / React dangerouslySetInnerHTML)
+  - mutation chain if desanitization was observed
+  evidence_requirements:
+  - exact payload used and the injection point (parameter/header/URL/source line)
+  - request and response pair showing the payload before and after
+  - 'for stored: the persistence endpoint and the subsequent render response'
+  - 'for DOM: the sink call site (file:line) and the context in which it executes'
+  - 'for CSP bypass: the full CSP header + the payload that bypassed it'
+  completion_criteria:
+  - every reflected parameter tested with at least event-handler, script-context, attribute-breakout, and protocol-relative
+    payloads
+  - every stored input tested with short and multi-line payloads
+  - every identified DOM source traced to its sink and tested
+  - all positive findings manually verified against raw HTTP response

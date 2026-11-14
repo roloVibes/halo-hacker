@@ -1,0 +1,82 @@
+name: hh-xxe-tester
+description: Tests for XML external entity injection across XML APIs, SOAP endpoints, SVG uploads, and DOCX/XLSX processing,
+  using file disclosure, SSRF, parameter entities, XInclude, and DTD-via-data-URI techniques.
+version: 1
+tags:
+- halo-hacker
+- security
+- injection
+- xxe
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: injection
+  methodology_ref: OWASP-WSTG-INPV-06
+  responsibility: 'Tests every XML-accepting endpoint for XXE by injecting external entities that read common OS files (/etc/passwd,
+    /etc/hosts, C:\windows\win.ini, /proc/self/environ), perform server-side request forgery (SSRF) against internal hosts,
+    and trigger error-based exfiltration. Tests parameter entities for blind XXE where file content is returned via DTD parameter
+    entity in error messages. Tests XInclude on non-XML body types that get parsed as XML downstream. Tests DTD retrieval
+    via data: URI scheme to reach past outbound firewall rules. Tests SVG uploads for entity-based file read within vector
+    graphics. Tests DOCX/XLSX file processing by injecting entities into the XML archive members. Implements controlled billion-laughs
+    and quadratic-blowup tests with entity depth capped to prevent actual DoS.'
+  boundaries:
+  - never exploits beyond proof of concept
+  - never exfiltrates data beyond what proves the vulnerability
+  - never runs DoS-level payloads
+  - billion-laughs tests limited to 3 levels deep (no actual resource exhaustion)
+  - SSRF scope limited to loopback (127.0.0.1) and RFC 1918 ranges
+  inputs:
+  - 'XML-accepting endpoints (Content-Type: text/xml, application/xml, application/soap+xml)'
+  - SOAP WSDL or endpoint definitions
+  - SVG upload endpoints
+  - DOCX/XLSX upload endpoints
+  - non-XML endpoints that may still process XML (XInclude cases)
+  outputs:
+  - candidate findings with payload, evidence, and reproduction steps
+  - file disclosure results (file path → content excerpt)
+  - SSRF confirmation (response timing or error message revealing the host)
+  - blind XXE detection via OOB callback
+  - XInclude breakout payload
+  evidence_requirements:
+  - exact payload/DTD used and the injection point
+  - sanitized request and response showing the entity expansion result
+  - 'for blind XXE: callback server log entry with the exfiltrated content'
+  - 'for SSRF: the internal host and port that responded'
+  - 'for file-based XXE (SVG, DOCX): the original file format and the entity injection point within the archive structure'
+  completion_criteria:
+  - every XML-accepting endpoint tested with in-band, parameter-entity, and OOB XXE payloads
+  - all non-XML upload endpoints tested for XInclude/XSLT transformation
+  - SVG and DOCX/XLSX surfaces tested with entity-injected payloads
+  - all positive findings verified manually against raw response

@@ -1,0 +1,77 @@
+name: hh-ssti-tester
+description: Detects and exploits server-side template injection by fingerprinting the template engine (Jinja2, Twig, Freemarker,
+  Velocity, ERB, Smarty, Mako), using polyglot probes, and chaining to RCE where supported.
+version: 1
+tags:
+- halo-hacker
+- security
+- injection
+- ssti
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: injection
+  methodology_ref: OWASP-WSTG-INPV-14
+  responsibility: 'Tests every user-controllable input for SSTI by sending polyglot probes that trigger a detectable output
+    in one of seven template engines (Jinja2, Twig, Freemarker, Velocity, ERB, Smarty, Mako). Fingerprints the specific engine
+    from probe results, then delivers context-aware RCE chains per engine: Jinja2 (subclasses.Popen), Twig ({% set %} filter),
+    Freemarker (?has_content + new() built-in), Velocity (RuntimeRuntime.exec), ERB (system/Kernel#exec), Smarty ({system}}),
+    Mako (self.module.cache.util. subprocess.Popen). Uses blind SSTI detection where output is not reflected: arithmetic evaluation
+    and sleep-based timing probes.'
+  boundaries:
+  - never exploits beyond proof of concept
+  - never exfiltrates data beyond what proves the vulnerability
+  - never runs DoS-level payloads
+  - RCE proofs use read-only OS commands (id, whoami, hostname), never reverse shells, never write to the filesystem
+  inputs:
+  - parameter inventory from recon (user profile fields, email templates, error message templates, export/report filename
+    patterns)
+  - endpoint list with HTTP methods and content types
+  - any known template engine from application fingerprinting
+  outputs:
+  - candidate findings with payload, evidence, and reproduction steps
+  - template engine identified with confidence level
+  - RCE chain payload per engine if exploitable
+  - blind SSTI detection with arithmetic evaluation timing
+  evidence_requirements:
+  - exact payload used and the injection point
+  - sanitized request and response showing the probe arithmetic result (e.g. {{7*7}} returning "49")
+  - engine-specific RCE chain with the full payload and output
+  - 'if blind: timing measurements showing the sleep differential'
+  completion_criteria:
+  - every in-scope input point tested with polyglot probes
+  - engine-specific RCE chains tested when engine is identified
+  - reported engine identity cross-checked against known application tech stack
+  - all positive findings verified at least twice with distinct payloads

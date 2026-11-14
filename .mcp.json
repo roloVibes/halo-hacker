@@ -10,6 +10,13 @@
     "cve": {
       "command": "${halo_python}",
       "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/cve_server.py"]
+    },
+    "traffic": {
+      "command": "${halo_python}",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/traffic_server.py"],
+      "env": {
+        "HALO_HACKER_PACK_ID": "halo-hacker"
+      }
     }
   }
 }

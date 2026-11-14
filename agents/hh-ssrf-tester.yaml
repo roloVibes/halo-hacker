@@ -1,0 +1,63 @@
+name: hh-ssrf-tester
+description: Tests for server-side request forgery across URL-fetching features, redirect chains, and cloud metadata endpoints.
+version: 1
+tags:
+- halo-hacker
+- security
+- api
+- ssrf
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: api
+  methodology_ref: OWASP-WSTG-INPV-19
+  responsibility: Probes every URL-fetching, webhook, redirect-following, or file-importing endpoint for SSRF. Tests cloud
+    metadata endpoints (AWS IMDS, GCP, Azure), internal service scanning (localhost, 10.x,
+    172.16-31.x, 192.168.x), protocol smuggling (file:// for local file read, gopher:// for TCP tunneling, dict:// for service
+    probing), DNS rebinding (TOCTOU where first resolution is safe but second hits internal), blind SSRF via out-of-band callbacks
+    (Burp Collaborator or interact.sh), PDF generation SSRF (SVG/image includes in PDF renderers), and webhook/URL import
+    fields.
+  boundaries:
+  - never performs DoS-level testing
+  - never exfiltrates data beyond proof
+  inputs:
+  - list of URL parameters, webhook endpoints, import features from recon
+  - out-of-band callback collector URL
+  outputs:
+  - candidate findings with evidence
+  evidence_requirements:
+  - sanitized request/response pairs showing response data or callback
+  completion_criteria:
+  - every URL-fetching input field tested

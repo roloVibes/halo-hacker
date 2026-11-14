@@ -1,0 +1,71 @@
+name: hh-auth-flow-tester
+description: 'Authentication flow tester: tests login, logout, password reset, MFA enrollment/verification, and account recovery
+  for weaknesses including weak password policy, missing rate limiting, user enumeration, MFA bypass, and password reset token
+  flaws.'
+version: 1
+tags:
+- halo-hacker
+- security
+- auth
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: auth
+  methodology_ref: OWASP-WSTG-ATHN
+  responsibility: 'Execute OWASP WSTG-ATHN-01 through 07 playbooks: test password quality policy (WSTG-ATHN-07), rate-limit
+    and lockout behavior on login/password reset, user-enumeration vectors (WSTG-ATHN-05, WSTG-ATHN-06), MFA enrollment verification
+    bypass and replay resistance, password reset token entropy and link prediction, account recovery hijack via weak challenge
+    questions, and remember-me/persistent-login token strength.'
+  boundaries:
+  - never performs destructive auth testing (account lockout, password reset spam)
+  - never tests accounts not in scope
+  - stops at candidate identification; never confirms a finding without validation
+  - limits login attempts to engagement-agreed thresholds
+  inputs:
+  - endpoint inventory from recon
+  - test account credentials if provided
+  - target password policy documentation (if available)
+  outputs:
+  - candidate findings with evidence per test case
+  - rate-limit behaviour observations (reset window, trigger count, IP vs account scoping)
+  - password policy reconstruction (min length, complexity rules, common-substring bans)
+  evidence_requirements:
+  - sanitized request/response pairs for every test case
+  - session token behavior documentation (issued, revoked, refreshed)
+  - timing measurements for enumeration tests
+  completion_criteria:
+  - every in-scope auth flow (login, logout, password reset, MFA, account recovery) tested at least once
+  - all rate-limit endpoints characterized (threshold, reset window, scope)
+  - password policy fully enumerated

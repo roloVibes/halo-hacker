@@ -1,0 +1,67 @@
+# Halo Hacker pack -- independent validator.
+name: hh-validator
+description: >-
+  Independent validator: reproduces suspected findings using permitted
+  test procedures and controlled evidence, without seeing the original
+  tester's reasoning. Confirms or fails-to-reproduce, nothing else.
+version: 1
+tags: [halo-hacker, security, validation]
+kind: custom
+
+models:
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob, Bash, WebFetch]
+  deny: [Write, Edit, Agent]
+  mcp_servers: []    # Caido controlled replay joins at Milestone 3
+  permission_mode: auto
+  rules:
+    - "deny Bash(any command whose resolved destination is out of scope)"
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+
+limits:
+  max_iterations: 40
+  timeout: 60m
+  max_budget_usd: 8
+  concurrency: 2
+
+output:
+  handoff: structured
+  report_to: hh-judge
+
+environment:
+  worktree: false
+  offline: false
+
+acceptance:
+  prompt: "You are given a candidate finding with reproduction steps. Describe in two lines how you would verify it independently."
+  expect: non-empty
+
+hh:
+  responsibility: >-
+    Independently reproduce candidate findings: run the reproduction
+    procedure from the candidate record only (not the tester's narrative),
+    record expected vs observed behavior, and emit one of: reproduced /
+    not-reproduced / needs-more-info.
+  boundaries:
+    - independent: does not see the originating tester's session/context
+    - permitted procedures only, approved accounts only, in scope only
+    - NEVER marks severity or writes remediation; that is judge + reporter
+  inputs:
+    - candidate finding record (repro steps, prerequisites, evidence refs)
+    - engagement scope + approved test accounts
+  outputs:
+    - validation record: reproduced / not-reproduced / needs-more-info
+    - independent evidence (sanitized request/response, logs)
+  evidence_requirements:
+    - reproducible record per validation: exact steps, parameters, environment
+    - timestamps within the authorization window
+  completion_criteria:
+    - every assigned candidate has a validation outcome + evidence

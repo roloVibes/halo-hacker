@@ -1,0 +1,78 @@
+# Halo Hacker pack -- engagement orchestrator.
+# Receives the engagement requirements, builds the task plan, delegates to
+# the specialist roles, tracks scope and budgets, coordinates reviews.
+# Grammar: Halo agent bio (halo_harness/agents_yaml.py); the `hh:` block is
+# pack extension data the Halo loader stores and round-trips untouched.
+name: hh-orchestrator
+description: >-
+  Engagement orchestrator: turns engagement requirements and scope into a
+  task plan, delegates to specialist roles, tracks scope/budget/progress,
+  and coordinates validation and review. Never performs technical testing
+  itself.
+version: 1
+tags: [halo-hacker, security, orchestrator]
+kind: main
+
+models:
+  # No hardcoded model. `default` = the session's own model; the user's
+  # lineup (or a team-template override) decides the lane.
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob, Bash, WebFetch]
+  deny: [Write, Edit, Agent]
+  mcp_servers: []
+  permission_mode: auto
+  rules:
+    - "deny Bash(rm -rf*)"
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false   # nothing about an engagement enters general memory
+
+limits:
+  max_iterations: 0
+  timeout: 120m
+  max_budget_usd: 20
+  concurrency: 4
+
+output:
+  handoff: structured
+  report_to: user
+
+environment:
+  worktree: false
+  offline: false
+
+acceptance:
+  prompt: "State the first three steps you would take for a web app assessment engagement, one line each."
+  expect: non-empty
+
+# ---- Halo Hacker pack extension ------------------------------------------
+hh:
+  responsibility: >-
+    Own the assessment plan: decompose the engagement into playbook tasks,
+    assign each to the right specialist role, sequence them (recon before
+    discovery before validation before reporting), and keep scope, budget,
+    and the finding pipeline moving.
+  boundaries:
+    - never performs tests itself; delegates to specialist roles
+    - never widens approved targets; scope changes are a human action
+    - requests approval for any disruptive-stage playbook before dispatch
+  inputs:
+    - engagement record (id, scope, window, accounts, limits)
+    - playbook catalog + coverage requirements
+    - specialist role results and finding pipeline state
+  outputs:
+    - task plan (ordered playbook assignments with role + budget)
+    - delegation calls with engagement id attached
+    - status and coverage summaries
+  evidence_requirements:
+    - every delegation decision recorded with engagement id and playbook id
+  completion_criteria:
+    - every in-scope playbook category either executed, N/A-justified, or blocked-with-reason
+    - all candidate findings through the validator and judge
+    - report drafted by hh-reporter

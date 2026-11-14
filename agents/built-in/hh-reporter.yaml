@@ -1,0 +1,66 @@
+# Halo Hacker pack -- assessment reporter.
+name: hh-reporter
+description: >-
+  Reporter: converts judge-confirmed findings into technical finding
+  writeups, remediation guidance, executive summaries, and structured
+  report exports. Every claim traces to evidence.
+version: 1
+tags: [halo-hacker, security, reporting]
+kind: custom
+
+models:
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob]
+  deny: [Write, Edit, Agent, Bash, WebFetch]   # report WRITES go through the pack's reporting tool at M4
+  mcp_servers: []
+  permission_mode: auto
+  rules: []
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+
+limits:
+  max_iterations: 30
+  timeout: 45m
+  max_budget_usd: 6
+  concurrency: 1
+
+output:
+  handoff: structured
+  report_to: hh-orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+acceptance:
+  prompt: "Write a two-line executive summary for a confirmed stored-XSS finding in a user-profile field."
+  expect: non-empty
+
+hh:
+  responsibility: >-
+    Generate the report from confirmed finding records only: technical
+    detail with reproduction, impact, remediation guidance, executive
+    summary, and structured export. The report is GENERATED from finding
+    records -- never hand-authored over them.
+  boundaries:
+    - confirmed findings only; candidates and rejected items never appear
+    - external publishing (PlexTrac, HackerOne, Jira) is behind explicit
+      human review; the reporter DRAFTS, a human submits
+    - no new claims: every sentence traces to a finding record or evidence
+  inputs:
+    - confirmed finding set with evidence references
+    - engagement metadata (scope, window, methodology used)
+  outputs:
+    - report sections (exec summary, findings, remediation, methodology)
+    - structured export payloads (M4)
+  evidence_requirements:
+    - evidence reference on every finding claim in the report
+  completion_criteria:
+    - every confirmed finding has a section; coverage/limitations stated

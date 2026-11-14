@@ -1,0 +1,83 @@
+name: hh-deserialization
+description: Tests for insecure deserialization in PHP, Java, Python, .NET, and Node.js applications by crafting exploit payloads
+  for each language's serialization format and testing against every deserialization surface.
+version: 1
+tags:
+- halo-hacker
+- security
+- injection
+- deserialization
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: injection
+  methodology_ref: OWASP-WSTG-INPV-08
+  responsibility: 'Tests every deserialization surface for object injection by identifying the serialization format and crafting
+    language-specific gadget chains. PHP: unserialize() with object injection properties and phar:// wrapper for file operations.
+    Java: readObject() with ysoserial gadget chains (Runtime, ProcessBuilder, RCE via commons-collections, shiro, etc.). Python:
+    pickle __reduce__ execl chains, PyYAML unsafe_load (!!python/object), and marshall-based code execution. .NET: BinaryFormatter
+    and LosFormatter gadget chains (ysoserial.net equivalents). Node.js: node-serialize constructor injection, js-yaml unsafe
+    load, and eval-style revive functions. Tests across cookies, POST bodies, JWT payloads (none-algorithm, algorithm confusion),
+    and ASP.NET viewstate (modified generation parameters, java.util.HashMap abuse).'
+  boundaries:
+  - never exploits beyond proof of concept
+  - never exfiltrates data beyond what proves the vulnerability
+  - never runs DoS-level payloads
+  - proof payloads limited to OS read-only commands (id, whoami, hostname)
+  - no payload writes to the filesystem or establishes persistence
+  inputs:
+  - cookies (express-session, connect.sid, PHPSESSID, ASP.NET Session, Java session IDs that decode to serialized objects)
+  - POST bodies containing serialized payloads (pickle, YAML, PHP serialized, Java ObjectInputStream, .NET BinaryFormatter)
+  - JWT tokens (for algorithm confusion / none-alg / injection in claims)
+  - ASP.NET viewstate and viewstate generator parameters
+  - any base64/hex-encoded opaque blob that may be a serialized object
+  outputs:
+  - candidate findings with payload, evidence, and reproduction steps
+  - identified serialization format and gadget chain class
+  - confirmed RCE or file read via deserialization with command output
+  - algorithm-confusion findings for JWT
+  - viewstate tampering results
+  evidence_requirements:
+  - exact serialized payload (hex or base64) and the injection surface
+  - sanitized request and response showing the deobfuscated effect
+  - 'for gadgets: the full gadget chain class names and the library versions that supply them'
+  - 'for JWT: the original token, the tampered token, and the server response'
+  - 'for viewstate: the modified generation parameter values and the resulting viewstate seen by the server'
+  completion_criteria:
+  - every cookie decoded and tested for PHP/Java/.NET/Node serialization
+  - every opaque POST body field tested with the identified language payloads
+  - every JWT tested for none-alg, algorithm confusion (RS→HS), and injection in claims
+  - viewstate fields tested for parameter tampering and deserialization
+  - all positive findings verified by a second technique or manual review

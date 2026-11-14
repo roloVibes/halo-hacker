@@ -1,0 +1,83 @@
+name: hh-content-discovery
+description: 'Content discovery: backup files (.bak, .old, ~), version-control exposure (.git/HEAD, .git/config, .svn/entries),
+  configuration file leaks (.env, web.config, config.php~, appsettings.json), directory listing, default credentials pages,
+  and sensitive-file enumeration across all hosts.'
+version: 1
+tags:
+- halo-hacker
+- security
+- recon
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: recon
+  methodology_ref: OWASP WSTG-CONF-04
+  responsibility: 'Enumerate sensitive and overlooked content on each target host. Seven discovery categories: (1) Backup/leftover
+    files — check for path~, .bak, .old, .swp, .save, .orig, COPY, .php.1, index.html.old appended to every known endpoint;
+    (2) Version-control exposure — probe /.git/HEAD, /.git/config, /.git/COMMIT_EDITMSG, /.svn/entries, /.svn/wc.db, /CVS/Root,
+    /.bzr/README; (3) Config/env file leaks — /.env, /.env.bak, /web.config, /appsettings.json, /configuration.yaml, /database.yml,
+    /wp-config.php~, /.DS_Store, /config.php~, /config.json, /application.properties; (4) Directory listing — probe each discovered
+    directory for an enabled directory listing (check for "Index of /" or Apache-style parent-directory links in the response
+    body); (5) Default / admin pages — /admin, /administrator, /manager, /console, /wp-admin, /phpmyadmin, /.hidden, /.private,
+    /.internal; (6) Source-map exposure — /build.map, /app.min.js.map, /assets/js/main.js.map for debug-path leakage; (7)
+    Deployment artifacts — /.gitlab-ci.yml, /Jenkinsfile, /.circleci/config.yml, /Dockerfile, /docker-compose.yml, /Makefile,
+    /Procfile, /.terraform/ for infrastructure-secret leakage. Each discovery is classified by sensitivity level (public,
+    internal, confidential) based on the likely contents if readable. When a .git/config is found obtainable, attempt to dump
+    the repository history via git-dump or git-cat-file to enumerate committed secrets.'
+  boundaries:
+  - read-only: GET/HEAD requests only; no POST, PUT, DELETE
+  - stops after one WAF-block response per target and coordinates with the orchestrator for rate-limit adjustment
+  - on .git directory listing, only enumerates object references; actual blob extraction requires explicit approval per engagement
+  - default-credential page detection reports only that the path exists (non-404) — never attempts to log in
+  inputs:
+  - expanded endpoint inventory from hh-endpoint-discovery
+  - technology stack from hh-tech-fingerprint (for technology-specific artifact paths)
+  - optional: custom content-discovery wordlist overrides
+  outputs:
+  - 'discovered-content table: path, category, status, sensitivity, content-snippet (first 2 KB if textual, MIME type if binary),
+    and whether the content was previously known or new'
+  - 'for each version-control leak: files/commits enumerated and any credentials/keys/tokens found in plaintext'
+  - directory listing found vs expected (notable because a listing is almost always a misconfiguration)
+  evidence_requirements:
+  - raw HTTP response for every discovered shadow path (status, headers, body snippet)
+  - 'version-control disclosure: the headers/response proving the directory serves files (e.g., 200 OK on /.git/HEAD with
+    "ref: refs")'
+  - 'directory listing: enough body content to show the Index of / parent headers or link enumeration'
+  completion_criteria:
+  - all seven discovery categories run against every base URL
+  - at minimum the top-200 backup-extension checks per known endpoint
+  - version-control probes on root and every discovered subdirectory
+  - sensitivity-classified content table handed to orchestrator
+  - any credential-bearing leak escalated immediately, not batched

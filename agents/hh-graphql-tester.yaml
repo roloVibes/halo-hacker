@@ -1,0 +1,62 @@
+name: hh-graphql-tester
+description: Tests GraphQL endpoints for introspection leaks, query depth/batching attacks, field suggestion enumeration,
+  and subscription abuse.
+version: 1
+tags:
+- halo-hacker
+- security
+- api
+- graphql
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: api
+  methodology_ref: OWASP-API6/API7:2023
+  responsibility: Runs introspection query to extract the full schema, then tests query depth attacks (deeply nested queries),
+    batching/aliasing for rate-limit bypass (multiple queries in one request), field suggestion enumeration (probing field
+    names), alias-based brute force (multiple aliases for the same field to extract data), persisted query bypass (if APQ
+    is in use), and subscription abuse (WebSocket/SDL subscriptions without proper auth).
+  boundaries:
+  - never performs DoS-level testing
+  - never exfiltrates data beyond proof
+  inputs:
+  - GraphQL endpoint URL from recon
+  - any known query/mutation names
+  outputs:
+  - candidate findings with evidence
+  evidence_requirements:
+  - sanitized request/response pairs
+  completion_criteria:
+  - every in-scope GraphQL endpoint tested

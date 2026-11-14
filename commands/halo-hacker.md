@@ -9,6 +9,7 @@ reporting.
 What it brings:
 - command /halo-hacker:hh -- Engage, check status, or disengage the active assessment (scope as data: one state file, fail-closed inside the test window)
 - command /halo-hacker:hh-report -- Generate a leadership email or full report from confirmed findings
+- command /halo-hacker:projects -- List, create, switch, or archive bug bounty programs (multi-project tracking)
 - lineup halo-hacker--hh-web-app-assessment -- Orchestrator, recon, web tester, validator, judge and reporter for a web application assessment
 - lineup halo-hacker--hh-api-security-review -- The same shape for an API surface
 - lineup halo-hacker--hh-ai-security-review -- AI/LLM surface review (prompt injection, tool abuse, data exposure)

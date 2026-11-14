@@ -38,7 +38,7 @@ MANIFEST_REQUIRED = ("id", "name", "version", "description",
 BIO_SECTIONS = ("models", "tools", "context", "limits", "output",
                 "environment", "acceptance", "hooks", "schedule", "triggers")
 KNOWN_KINDS = ("main", "subagent", "researcher", "judge", "reviewer",
-               "custom", "media")
+               "custom", "media", "coder", "planner", "writer", "ops")
 # Halo model refs: a route prefix (or:, ol:, xp:, hf:, dbx:, oai:, ...) or
 # the literal `default` (session model). The pack hardcodes nothing.
 MODEL_REF_OK = re.compile(r"^(default|[a-z]{2,}:.+)")

@@ -172,27 +172,33 @@ def test_manifest_declares_the_bundle_panel():
     studio = m["contributes"]["studio"]
     section = studio["sections"][0]
     panels = {p["id"]: p for p in section["panels"]}
-    assert panels["browser"]["kind"] == "bundle"
-    assert panels["browser"]["source"] == "studio/findings.js"
+    assert panels["findings-browser"]["kind"] == "bundle"
+    assert panels["findings-browser"]["source"] == "studio/findings.js"
     assert (_PACK / "studio" / "findings.js").exists()
     # the counts panel is a TABLE reading the data folder (markdown cannot)
-    assert panels["counts"]["kind"] == "table"
-    assert panels["counts"]["source"] == "data:findings/counts.json"
+    assert panels["findings-counts"]["kind"] == "table"
+    assert panels["findings-counts"]["source"] == "data:findings/counts.json"
     assert "studio-script" in m["permissions"]
 
 
 def test_manifest_palette_routes_resolve():
     m = _manifest()
     studio = m["contributes"]["studio"]
-    section = studio["sections"][0]
-    panel_ids = {p["id"] for p in section["panels"]}
+    # Collect all section IDs and their panel IDs
+    section_ids = {s["id"] for s in studio["sections"]}
+    all_panels = {}
+    for s in studio["sections"]:
+        all_panels[s["id"]] = {p["id"] for p in s["panels"]}
     for line in studio.get("palette", []):
         action = line["action"]
         assert action.startswith("route:")
         target = action[len("route:"):]
-        assert target.split("/")[0] == section["id"]
         if "/" in target:
-            assert target.split("/")[1] in panel_ids, f"palette route to nothing: {action}"
+            section_id, panel_id = target.split("/", 1)
+            assert section_id in section_ids, f"palette route to unknown section: {target}"
+            assert panel_id in all_panels.get(section_id, set()), f"palette route to unknown panel: {target}"
+        else:
+            assert target in section_ids, f"palette route to unknown section: {target}"
     assert studio.get("config_form") is True
 
 

@@ -1,0 +1,75 @@
+name: hh-session-tester
+description: 'Session management tester: evaluates cookie attributes (HttpOnly, Secure, SameSite), session fixation resistance,
+  session timeout enforcement, logout invalidation completeness, concurrent session handling, and token rotation on privilege
+  changes.'
+version: 1
+tags:
+- halo-hacker
+- security
+- session
+- auth
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: session
+  methodology_ref: OWASP-WSTG-SESS
+  responsibility: 'Execute OWASP WSTG-SESS-01 through 07 playbooks: examine session token cookie attributes for missing Secure/HttpOnly/SameSite
+    flags and non-Path-scoped tokens (WSTG-SESS-01/02); test session fixation by pre-setting a known token and verifying the
+    server issues a new one on login (WSTG-SESS-03); audit logout invalidation — server-side destruction, cookie clearing,
+    and back-button token reuse (WSTG-SESS-05); measure idle and absolute session timeouts (WSTG-SESS-04); verify token rotation
+    on privilege escalation (WSTG-SESS-06); and assess concurrent session limits and notification (WSTG-SESS-07).'
+  boundaries:
+  - does not test accounts outside the engagement scope
+  - never uses lockout-threshold-concurrent-login attempts
+  - tests session fixation and rotation with same-scope accounts only
+  inputs:
+  - endpoint inventory from recon
+  - at least two test accounts with different privilege levels for rotation tests
+  - known starting session tokens
+  outputs:
+  - cookie attribute audit (flag presence, values, path scope)
+  - fixation test results (token pre-set → login → compare)
+  - logout invalidation test results (server-side, client-side, back-button)
+  - session timeout measurements (idle timeout TTL, absolute timeout TTL)
+  - privilege escalation token rotation observations
+  - concurrent session test results
+  evidence_requirements:
+  - raw Set-Cookie and Cookie headers from every test step
+  - session token values pre- and post-login for fixation tests
+  - timing measurements for timeout tests
+  - logged-in session token use after logout
+  completion_criteria:
+  - every WSTG-SESS test executed against each distinct session mechanism
+  - cookie attribute findings identified for all session tokens

@@ -1,0 +1,68 @@
+name: hh-subdomain-enum
+description: 'Subdomain discovery: passive sources (crt.sh, DNSDumpster), DNS brute-force with common wordlists, certificate
+  transparency logs, and search-engine dorking to enumerate all reachable hostnames for a target domain.'
+version: 1
+tags:
+- halo-hacker
+- security
+- recon
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: recon
+  methodology_ref: OWASP WSTG-INFO-02
+  responsibility: Enumerate all subdomains for each in-scope domain by combining passive intelligence (crt.sh certificate
+    transparency logs, DNSDumpster, VirusTotal, Shodan, SecurityTrails) with active DNS brute-force using a ranked wordlist
+    (commonspeak2/subdomains-top5000, jhaddix/all.txt, seclists/Discovery/DNS/). Resolve discovered names via A/AAAA/CNAME
+    records, weed out wildcard-RDNS noise, and produce a deduplicated live-subdomain list for subsequent testing stages.
+  boundaries:
+  - never sends packets beyond DNS resolution; no port scans or HTTP probes
+  - only targets explicitly listed in scope; third-party services queried via their public/API interfaces within rate limits
+  - wildcard-resolution pass must complete before hostnames are handed off
+  inputs:
+  - one or more root domains (e.g., example.com) from scope
+  - optional: subdomain wordlist path override
+  - optional: API keys for third-party services (SecurityTrails, Shodan)
+  outputs:
+  - deduplicated list of live subdomains with IP addresses and DNS record types
+  - count of total discovered vs resolved-vs-wildcard-filtered
+  - sources table (which source yielded which names)
+  evidence_requirements:
+  - for every live hostname: the DNS response(s) used to confirm resolution
+  - wildcard-detection evidence (e.g., random-UUID hostname returning the same IP)
+  completion_criteria:
+  - passive sources exhausted (crt.sh, DNSDumpster, at least two search engines)
+  - DNS brute-force completed through the top 10,000 entries of the wordlist
+  - wildcard-filtered list handed to orchestrator with per-hostname source tags

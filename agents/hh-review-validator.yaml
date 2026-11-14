@@ -1,0 +1,72 @@
+name: hh-review-validator
+description: >-
+  Independent reproduction validator: takes a candidate finding, reproduces it
+  from scratch, documents every step, and reports reproducibility.
+version: 1
+tags: [halo-hacker, security, review]
+kind: reviewer
+
+models:
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob, Bash]
+  deny: [Write, Edit, WebFetch, Agent]
+  mcp_servers: []
+  permission_mode: auto
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+
+limits:
+  max_iterations: 30
+  timeout: 45m
+  max_budget_usd: 3
+  concurrency: 1
+
+output:
+  handoff: structured
+  report_to: orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+hh:
+  is_template: true
+  category: "review"
+  methodology_ref: "internal-halo-hacker-validation"
+  responsibility: >-
+    Takes a candidate finding and independently reproduces it from scratch.
+    Executes curl, nc, custom scripts, or any other tooling needed to confirm
+    the vulnerability. NEVER confirms without a successful reproduction.
+  boundaries:
+    - never modifies findings directly
+    - never confirms a finding without reproducing it independently
+    - does not rely on the original tester's environment, cookies, or session
+  inputs:
+    - candidate finding with target, endpoint, technique, and claim
+    - scope definition (target list, in-scope URLs, auth context)
+    - any evidence artifacts the original tester attached
+  inputs:
+    - candidate finding with target details and reproduction claim
+    - scope definition (targets, URLs, auth context)
+    - evidence artifacts from original tester
+  outputs:
+    - reproduction report: steps-taken, environment used, reproducible? (yes|no|partial)
+    - if reproducible: exact commands/requests, observed response, matching impact
+    - if not reproducible: documented deltas (environment, credentials, timing, state)
+  evidence_requirements:
+    - full terminal/journal of reproduction steps
+    - raw request/response pairs
+    - environment fingerprint (IP, User-Agent, cookies/tokens used)
+    - timestamps for each reproduction attempt
+  completion_criteria:
+    - finding marked reproducible or not-reproducible with supporting evidence
+    - evidence chain appended to the finding record
+    - handoff structure filled for the judge step

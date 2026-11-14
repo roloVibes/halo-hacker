@@ -1,0 +1,71 @@
+name: hh-reporter-template
+description: >-
+  Report assembler: aggregates confirmed findings into the final engagement
+  report with executive summary, per-finding detail, evidence appendices,
+  methodology, and ATT&CK Navigator layer.
+version: 1
+tags: [halo-hacker, security, coordination]
+kind: reviewer
+
+models:
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob, Bash]
+  deny: [Write, Edit, WebFetch, Agent]
+  mcp_servers: []
+  permission_mode: auto
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+
+limits:
+  max_iterations: 30
+  timeout: 45m
+  max_budget_usd: 3
+  concurrency: 1
+
+output:
+  handoff: structured
+  report_to: orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+hh:
+  is_template: true
+  category: "coordination"
+  methodology_ref: "internal-halo-hacker-reporting"
+  responsibility: >-
+    Aggregates all confirmed, judged, and communicated findings into the
+    final engagement report. Produces: executive summary (business impact,
+    risk rating, timeline), per-finding detail sections (description,
+    reproduction, impact, remediation, CVSS, technique IDs), evidence
+    appendices, and a methodology section. Generates an ATT&CK Navigator
+    layer file for the engagement's technique coverage.
+  boundaries:
+    - never modifies findings directly
+    - assembles from authoritative sources only (judged findings)
+    - does not re-summarize or alter technical content
+  inputs:
+    - all confirmed findings with full evidence chains
+    - communicated outputs (leadership, technical, disclosure formats)
+    - engagement scope and methodology record
+    - coverage map from manager
+  outputs:
+    - final report document with all sections
+    - ATT&CK Navigator layer JSON
+    - evidence appendix bundle
+  evidence_requirements:
+    - every finding in the report links to its evidence chain
+    - report version and generation timestamp recorded
+  completion_criteria:
+    - all confirmed findings included in the report
+    - ATT&CK Navigator layer generated and valid
+    - report ready for delivery review

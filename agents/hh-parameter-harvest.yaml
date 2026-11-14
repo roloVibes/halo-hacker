@@ -1,0 +1,81 @@
+name: hh-parameter-harvest
+description: 'Parameter extraction: HTML form fields, query string analysis, JS variable extraction, API documentation parsing,
+  and traffic log analysis to catalog every input parameter the application accepts.'
+version: 1
+tags:
+- halo-hacker
+- security
+- recon
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: recon
+  methodology_ref: OWASP WSTG-INFO-06
+  responsibility: 'Extract and catalog all input parameters accepted by the application across every transport layer. Six
+    collection methods: (1) HTML form field extraction — parse every HTML page to find <input>, <select>, <textarea>, hidden
+    fields, and their default values; (2) Query-string analysis — collect parameter names from all discovered endpoints, noting
+    which accept GET vs POST vs COOKIE-supplied values; (3) JavaScript variable extraction — grep JS sources for URL parameter
+    references (req.query., params[.], getParameter, $_GET, request.args), API key placeholders, and hardcoded test values;
+    (4) API documentation parsing — if OpenAPI/Swagger/GraphQL introspection is present, extract every field name, type, required
+    flag, and enum set; (5) Traffic-log analysis — from any provided HTTP history (Burp, ZAP, mitmproxy dump), extract unique
+    parameter names grouped by endpoint and method; (6) Common-parameter probing — a targeted probe of ~200 known vulnerability-relevant
+    parameter names (debug, admin, test, token, api_key, callback, redirect, source, dest, file, template) against discovered
+    endpoints, recording which ones produce different responses (indicating the application actually reads them). Each parameter
+    is tagged with its source, expected data type, whether it appears required, and any observed constraints (minlength, maxlength,
+    pattern, regex).'
+  boundaries:
+  - parameter PROBING is read-only (single request per param per endpoint); no injection, no mutation of state
+  - no parameter brute-force beyond the ~200 security-relevant name list unless explicitly authorized by the engagement scope
+  - traffic-log analysis only uses logs the engagement explicitly provides
+  inputs:
+  - endpoint inventory from hh-endpoint-discovery
+  - optional: HTTP traffic captures (Burp JSON, ZAP HAR, mitmproxy flows)
+  - optional: API spec files (OpenAPI/Swagger JSON/YAML, GraphQL SDL)
+  outputs:
+  - 'per-endpoint parameter table: parameter name, method, location (query/body/header/cookie), data type, required/optional,
+    observed constraints, sources'
+  - list of parameters that changed server behavior during the common-param probe
+  - GraphQL schema fields and mutations if introspection was accessible
+  evidence_requirements:
+  - for each parameter from JS: the source file, line, and matched context
+  - for form fields: the raw HTML containing the field and its attributes
+  - for traffic logs: the originating request URL and the parameter value (redacted)
+  - for the probe pass: request/response pair showing the behavioral delta
+  completion_criteria:
+  - every discovered endpoint's HTML parsed for form fields
+  - all JS files from endpoint-discovery re-scanned for parameter references
+  - API documentation parsed and parameter tables extracted (if found)
+  - common-parameter probe completed on all authenticated and unauthenticated targets
+  - consolidated parameter catalog handed to orchestrator

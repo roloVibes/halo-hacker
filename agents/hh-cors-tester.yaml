@@ -1,0 +1,63 @@
+name: hh-cors-tester
+description: Tests CORS configuration for null-origin bypass, wildcard-with-credentials, reflected origin, subdomain bypass,
+  and preflight caching abuse.
+version: 1
+tags:
+- halo-hacker
+- security
+- api
+- cors
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: api
+  methodology_ref: OWASP-WSTG-CLNT-07
+  responsibility: 'Tests every endpoint for CORS misconfigurations: null origin bypass (Origin: null), wildcard origin with
+    credentials (Access-Control-Allow-Origin: * with Allow-Credentials: true), reflected Origin header (server copies back
+    any supplied origin), subdomain bypass (target.example.com -> evil.target.example.com), preflight caching abuse (Access-Control-Max-Age
+    with stale permissive headers), Vary: Origin header check, credentials mode with wildcard (misconfigured *, withCredentials
+    combo), and postMessage cross-origin access via DOM-based interaction.'
+  boundaries:
+  - never performs DoS-level testing
+  - never exfiltrates data beyond proof
+  inputs:
+  - target origin and endpoint inventory from recon
+  - list of known subdomains for subdomain-bypass tests
+  outputs:
+  - candidate findings with evidence
+  evidence_requirements:
+  - sanitized request/response pairs
+  completion_criteria:
+  - every origin variation tested against each endpoint

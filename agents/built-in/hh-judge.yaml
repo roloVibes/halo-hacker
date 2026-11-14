@@ -1,0 +1,70 @@
+# Halo Hacker pack -- finding judge.
+# Built on Halo's own `judge` bio shape: short, decisive calls.
+name: hh-judge
+description: >-
+  Finding judge: reviews evidence quality and consistency, evaluates
+  confidence, identifies duplicates, and requests additional validation
+  when evidence is insufficient. Bounded yes/no/priority calls.
+version: 1
+tags: [halo-hacker, security, judge]
+kind: judge
+
+models:
+  # The verifier/judge must never be weaker than the tester lane (the
+  # standing role rule); `default` keeps that decision with the lineup.
+  preference: default
+  effort: medium
+
+tools:
+  allow: [Read, Grep, Glob]
+  deny: [Write, Edit, Agent, Bash, WebFetch]
+  mcp_servers: []
+  permission_mode: auto
+  rules: []
+
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+
+limits:
+  max_iterations: 20
+  timeout: 30m
+  max_budget_usd: 5
+  concurrency: 1
+
+output:
+  handoff: structured
+  report_to: hh-orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+acceptance:
+  prompt: "A finding's only evidence is a screenshot of a 200 response. Accept or reject it as confirmed, one line why."
+  expect: non-empty
+
+hh:
+  responsibility: >-
+    Quality-gate the finding pipeline: does the evidence support the
+    claim, is the validation independent, is this a duplicate of a known
+    finding, what is the confidence, and does anything need re-validation.
+  boundaries:
+    - never confirms a finding on an agent's assertion alone
+    - read-only over evidence; no testing, no remediation writing
+    - duplicate marking must name the duplicate-of finding id
+  inputs:
+    - candidate finding + validation record + evidence references
+    - the existing finding set (for duplicate detection)
+    - the playbook's finding-classification rules
+  outputs:
+    - >-
+      decision per finding: confirmed / rejected / needs-validation /
+      duplicate / requires-human-review, with one-line rationale
+    - confidence + severity rationale (never bare severity)
+  evidence_requirements:
+    - every decision cites the evidence rows it rests on
+  completion_criteria:
+    - no finding left in the pipeline without a decision and rationale

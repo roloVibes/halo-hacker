@@ -1,0 +1,88 @@
+name: hh-cloud-config
+description: 'Tests for cloud infrastructure misconfigurations: public S3/GCS/Azure blob exposure, overly permissive IAM roles,
+  security group audit (0.0.0.0/0), unencrypted storage, metadata service access from compute, cloud function triggers, and
+  CI/CD pipeline exposure.'
+version: 1
+tags:
+- halo-hacker
+- security
+- infrastructure
+- cloud
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: infrastructure
+  methodology_ref: OWASP WSTG-CONF-01/08
+  responsibility: Tests cloud storage exposure by enumerating common bucket naming patterns (target name, target+backup, target+assets,
+    target+static) across AWS S3, Google Cloud Storage, and Azure Blob Storage, and probing for public listing/read access
+    (HTTP 200 on bucket listing, files accessible without authentication). Tests IAM misconfiguration by reviewing discovered
+    cloud resources for overly permissive roles, cross-account access, and publicly attached policies (bucket policy granting
+    */* to * principal). Tests security group/firewall rules by enumerating services exposed via cloud metadata (AWS EC2 instance
+    metadata at the cloud metadata endpoint (AWS IMDSv1/v2, GCP, Azure) and checking security group configurations
+    for 0.0.0.0/0 ingress on sensitive ports (22, 3389, 4433, 2375/2376 Docker, 9200 Elasticsearch, 27017 MongoDB). Tests
+    unencrypted storage by probing for plaintext data in identified S3/GCS buckets and checking TLS configuration on cloud-hosted
+    services. Tests metadata service access by crafting SSRF payloads that target cloud metadata endpoints and credential
+    retrieval (AWS IMDS, GCP computeMetadata, Azure Instance Metadata Service). Tests cloud function trigger
+    abuse by analyzing serverless function configuration for excessive event sources (unauthenticated HTTP triggers, unvalidated
+    event sources). Tests CI/CD pipeline exposure by discovering CI configuration files in public storage, exposed build artifacts
+    containing cloud credentials, and hardcoded service account keys in deployable assets.
+  boundaries:
+  - never reads or downloads file content beyond what proves access
+  - never writes to discovered cloud resources (no create/update/delete)
+  - metadata service probes are attempted only via SSRF, never from within the cloud environment itself
+  - bucket enumeration uses only public DNS resolution and HTTP probes, never provider-internal API calls
+  inputs:
+  - target domain(s), organization name, and cloud provider if known
+  - ASN/IP ranges for cloud-hosted services
+  - discovered SSRF injection points (for metadata service testing)
+  - any discovered bucket/cloud resource identifiers
+  outputs:
+  - candidate cloud misconfiguration findings with evidence
+  - 'classification: storage exposure / IAM misconfig / security group / unencrypted storage / metadata exposure / function
+    trigger / CI leakage'
+  - 'per-bucket access level: public-listing / public-read / public-write / authenticated-read / not-public'
+  - metadata-accessible endpoints and credentials retrieved (sanitized)
+  - exposed CI config files and any embedded credentials identified
+  evidence_requirements:
+  - 'for storage exposure: bucket URL, HTTP response (status + headers) showing public access, listing count if available'
+  - 'for IAM: the discovered policy document or role structure'
+  - 'for security group: port, protocol, and source range (0.0.0.0/0)'
+  - 'for metadata: the SSRF vector and the metadata endpoint reached'
+  - 'for CI leakage: file path, file type, and type of secret found (key type, not the secret value)'
+  completion_criteria:
+  - all major cloud providers checked for storage exposure (AWS, GCP, Azure)
+  - each discovered cloud resource assessed for IAM/policy misconfiguration
+  - security group import from discovered cloud blocks
+  - SSRF-to-metadata tested for every verified SSRF injection point

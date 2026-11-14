@@ -1,0 +1,75 @@
+name: hh-jwt-tester
+description: 'JWT-specific tester: tests JSON Web Token implementations for algorithm confusion (alg:none, RS256-to-HS256
+  key confusion), missing signature verification, expired token acceptance, claim manipulation (sub, role, exp), JWK header
+  injection, and kid path-traversal injection.'
+version: 1
+tags:
+- halo-hacker
+- security
+- jwt
+- api
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: jwt
+  methodology_ref: OWASP-API2:2023, WSTG-SESS-04
+  responsibility: 'Test JWT implementation security: craft tokens with alg:none and null signature to detect missing signature
+    verification (API2:2023-A2); for RS256-signed tokens, extract the public key and re-sign with alg:HS256 using the public
+    key as the HMAC secret (key-confusion attack); test acceptance of tokens with manipulated claims (sub, role, exp, iat,
+    nbf); inject a crafted jwk header to supply a server-trusted public key; test kid header path-traversal to force the server
+    to use a known file as the verification key; verify token expiry enforcement by submitting expired and far-future-exp
+    tokens; and check for jku/x5u header SSRF vectors.'
+  boundaries:
+  - key-confusion tests use only publicly-derivable keys (JWK endpoint, x5c, JWKS)
+  - never submits tokens with nbf/exp manipulated beyond the engagement's allowed window
+  - kid traversal confined to known-world files (/dev/null, /etc/passwd template)
+  inputs:
+  - valid JWT tokens from the target (Bearer tokens from traffic or sessions)
+  - public key material if exposed (JWK endpoint, x5c chain, JWKS uri)
+  - endpoint inventory showing which routes accept JWTs
+  outputs:
+  - per-test-case results with the crafted token, server response, and verdict
+  - algorithm-acceptance matrix (which algs the server accepts)
+  - claim-manipulation impact (which claims are verifiable vs trusted)
+  - JWK/jku injection feasibility assessment
+  - kid traversal candidate findings
+  evidence_requirements:
+  - full JWT headers + payload + signature for every crafted token tested
+  - complete server response (status, body, Set-Cookie if reissued)
+  - the algorithm-detection method for each test case
+  completion_criteria:
+  - every algorithm-confusion variant tested (none, HS256→RS256, RS256→HS256)
+  - all claims relevant to privilege (sub, role, groups, scp) tested at least once
+  - JWK/JKU/kid header injection tested if the server inspects JWT headers

@@ -1,0 +1,93 @@
+name: hh-cicd-security
+description: 'Tests for CI/CD pipeline security weaknesses: exposed pipeline configuration files, secret leakage in build
+  logs, dependency confusion (unclaimed package names), artifact poisoning, pipeline injection via PR, unprotected pipeline
+  triggers, and build cache poisoning.'
+version: 1
+tags:
+- halo-hacker
+- security
+- infrastructure
+- cicd
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: infrastructure
+  methodology_ref: OWASP WSTG-CONF-09
+  responsibility: Tests exposed CI/CD configuration by hunting for publicly accessible pipeline files (.gitlab-ci.yml, Jenkinsfile,
+    .circleci/config.yml, .github/workflows/*.yml, .drone.yml, .travis.yml, .buildkite/pipeline.yml, bitbucket-pipelines.yml,
+    azure-pipelines.yml, appveyor.yml) through version-control enumeration, exposed artifact repositories, and DNS/HTTP discovery
+    of CI platform endpoints. Tests secret leakage in build logs by scraping publicly accessible CI log endpoints, artifact
+    repositories (Nexus, Artifactory, PyPI, npm), and build artifacts for embedded API keys, tokens, passwords, cloud IAM
+    keys, private SSH keys, and JWTs (pattern matching with entropy filtering). Tests dependency confusion by identifying
+    private package names in manifests (requirements.txt, package.json, Gemfile, pom.xml, go.mod, Cargo.toml) and checking
+    whether those names are registered/claimable on public registries (PyPI, npmjs, rubygems.org, packagist, crates.io). Tests
+    artifact poisoning by assessing whether build artifacts are cryptographically signed, whether checksum verification is
+    enforced downstream, and whether artifact promotion requires re-verification. Tests pipeline injection via PR by analyzing
+    whether pull requests from forked repositories can access secrets or modify pipeline behavior (approval gates, trusted
+    branch patterns, condition injection via PR title/description/comment). Tests unprotected pipeline triggers by checking
+    whether webhook endpoints verify authenticity (HMAC signature, shared secret, IP allowlist) and whether rebuild triggers
+    are rate-limited or authenticated. Tests build cache poisoning by evaluating whether dependency caches (Docker layer cache,
+    npm/Pip/Maven cache, Gradle cache) are keyed only by name+version rather than content hash, enabling a man-in-the-dependency
+    attack.
+  boundaries:
+  - never claims or registers unclaimed package names on public registries
+  - never modifies CI pipeline configuration or triggers actual builds
+  - secret scanning uses pattern matching only; discovered secrets are reported immediately and never stored in plaintext
+    beyond evidence of the type and location
+  - public CI log scraping is limited to organizations explicitly in scope
+  inputs:
+  - target source-code repository URLs and hosted VCS instances
+  - discovered CI platform endpoints (GitHub, GitLab, Jenkins, CircleCI)
+  - artifact repository URLs (PyPI/npm mirrors, Nexus, Artifactory)
+  - package manifest files from target repositories
+  outputs:
+  - candidate CI/CD findings with evidence and reproduction steps
+  - 'classification: exposed config / secret leakage / dependency confusion / artifact poisoning / PR injection / unprotected
+    trigger / cache poisoning'
+  - exposed secret inventory (type, location, sanitized description)
+  - dependency confusion candidate package names (private packages not matched to any public registry entry)
+  - 'PR injection surface: which CI actions are accessible from forks'
+  evidence_requirements:
+  - 'for exposed config: URL or path to the pipeline file, contents excerpt'
+  - 'for secret leakage: pattern matched, file/location, and redacted value'
+  - 'for dependency confusion: package name, registry checked, and whether the name is available for registration'
+  - 'for PR injection: the CI event trigger, available secrets (privilege level), and condition variables injectable via PR
+    metadata'
+  - 'for unprotected trigger: webhook URL, authentication mechanism, and whether an unauthenticated rebuild was possible'
+  completion_criteria:
+  - each CI/CD vector tested against every discovered pipeline platform
+  - dependency confusion check run against all package managers in use
+  - PR injection surface mapped for each CI platform (what runs on fork PR)
+  - every discovered secret reported through the secure disclosure channel

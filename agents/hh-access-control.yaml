@@ -1,0 +1,89 @@
+name: hh-access-control
+description: Tests vertical and horizontal access control enforcement via forced browsing, HTTP method override, role-matrix
+  enumeration (admin/manager/user/anonymous), and CORS misconfiguration discovery.
+version: 1
+tags:
+- halo-hacker
+- security
+- logic
+- access-control
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: logic
+  methodology_ref: OWASP-WSTG-ATHZ-01/02
+  responsibility: 'Tests whether the application correctly restricts access to resources, functions, and administrative endpoints
+    based on user authorization level. Covers four methodical test families:
+
+    (1) Forced browsing — reconstructs URL conventions from observed patterns (e.g., /admin → /admin2, /api/v1/users → /api/v2/users,
+    /dashboard → /dashboard-beta) and checks for unauthorized access by unauthenticated and low-privilege sessions. Includes
+    directory/file discovery against documented admin patterns (e.g., /console, /swagger, /api-docs, /.env, /backup).
+
+    (2) HTTP method override — tests each endpoint with alternate methods (GET for POST-only endpoints, PUT for read-only,
+    PATCH for full-resource access, OPTIONS on restricted paths, DELETE on create-only routes, HEAD on mutating routes). Checks
+    X-HTTP-Method-Override, X-HTTP-Method, X-Method-Override headers. Also tests parameter-based overrides like _method=PUT
+    in POST body and query string.
+
+    (3) Role-matrix enumeration — given N roles (anonymous, user, manager, admin), builds an N×N matrix where each cell tests
+    whether role A can access endpoints exclusive to role B. Tests every endpoint from the recon inventory against every available
+    session type. Flagged cells: anonymous-writes, user-reads-admin, user-writes-manager, manager-writes-admin, admin-can''t-write-own.
+
+    (4) CORS misconfiguration — tests permissive origins (null, *, subdomain patterns), credentials-with-wildcard, preflight
+    bypass, Vary:Origin absence, and non-standard header exposure via Access-Control-Expose-Headers.'
+  boundaries:
+  - never performs destructive actions such as mass DELETE or UPDATE against live data
+  - limits forced-browse depth to 3 levels per discovered path segment
+  - restricts role-matrix enumeration to one probe per (role, endpoint, method) tuple
+  inputs:
+  - authenticated session tokens for each available role (admin, manager, user, anonymous)
+  - endpoint inventory with HTTP methods from recon
+  - observed URL naming conventions (e.g., /api/v1/resource, /admin/panel)
+  outputs:
+  - candidate findings for each broken access control pattern identified
+  - role-matrix heat map showing allowed/denied per (role, endpoint, method) cell
+  - CORS configuration report listing allowed origins, methods, and headers
+  - forced-browse discovered endpoints with access results per role
+  evidence_requirements:
+  - full request/response pairs for each access control bypass
+  - role-matrix excerpt showing critical cells (e.g., anonymous→admin panel 200 OK)
+  - response body differences between allowed vs denied access to the same resource
+  - CORS preflight response headers showing Access-Control-Allow-Origin value
+  - for method override: the original request, the overridden request, and both responses
+  completion_criteria:
+  - all recon endpoints tested against all available role sessions
+  - forced-browse paths attempted against at least 3 common admin path conventions
+  - HTTP method override tested on minimum 5 high-value endpoints (e.g., POST /api/orders, PUT /api/users/{id})
+  - CORS probed on all API endpoints returning user-specific data
+  - role-matrix heat map produced with no untested (role, endpoint, method) pairs

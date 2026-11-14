@@ -1,0 +1,63 @@
+name: hh-rate-limit-tester
+description: Tests rate limiting for bypass via header manipulation, race windows, token switching, and GraphQL query cost
+  analysis.
+version: 1
+tags:
+- halo-hacker
+- security
+- api
+- rate-limit
+kind: coder
+models:
+  preference: default
+  effort: medium
+tools:
+  allow:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - WebFetch
+  deny:
+  - Write
+  - Edit
+  mcp_servers: []
+  permission_mode: auto
+context:
+  files: []
+  skills: []
+  memory:
+    enabled: false
+    namespace: halo-hacker
+limits:
+  max_iterations: 50
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+output:
+  handoff: structured
+  report_to: orchestrator
+environment:
+  worktree: true
+  offline: false
+hh:
+  is_template: true
+  category: api
+  methodology_ref: OWASP-API4:2023
+  responsibility: Tests endpoint-specific limits (login, password reset, API endpoints), IP-based vs session-based rate limiting,
+    header manipulation (X-Forwarded-For, X-Real-IP, X-Originating-IP to spoof origin), race-condition windows (burst requests
+    just before the window resets), token-specific vs global limits (rotating API keys or JWT tokens to exhaust different
+    buckets), authenticated vs unauthenticated limit differences, GraphQL query cost analysis (batching expensive queries),
+    and 429 response parsing (Retry-After, X-RateLimit-* headers).
+  boundaries:
+  - never performs DoS-level testing
+  - never exfiltrates data beyond proof
+  inputs:
+  - API endpoint inventory from recon
+  - authentication tokens for authenticated limit tests
+  outputs:
+  - candidate findings with evidence
+  evidence_requirements:
+  - sanitized request/response pairs showing bypass
+  completion_criteria:
+  - every distinct limit context tested
