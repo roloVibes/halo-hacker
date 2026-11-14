@@ -1,0 +1,121 @@
+# builder-hints.yaml — keyword-to-template mappings for Halo 3.6.0.0's Builder.
+#
+# When a user opens Builder in Studio and says "make me an agent that tests
+# for X", the Builder resolves X against these hints to find the right
+# methodology template (agents/hh-*.yaml) to start from. This file is data
+# only — Halo 3.5.0.0 does not read it, but 3.6.0.0's Builder does. It is
+# shipped so the pack is Builder-ready the day 3.6 lands.
+#
+# Each entry: `hint` (one or more keywords) -> `template` (the bio name) and
+# optional `workflow` (a pre-built workflow the Builder can start from).
+
+hints:
+  # Recon
+  - hint: [subdomain, subdomains, dns enumeration, asset discovery]
+    template: hh-subdomain-enum
+  - hint: [port scan, port scanning, service discovery, open ports]
+    template: hh-port-scanner
+  - hint: [technology fingerprint, tech stack, waf detection, fingerprinting]
+    template: hh-tech-fingerprint
+  - hint: [endpoint discovery, endpoint enumeration, url enumeration, directory brute force]
+    template: hh-endpoint-discovery
+  - hint: [parameter harvest, parameter extraction, input points, attack surface]
+    template: hh-parameter-harvest
+  - hint: [content discovery, backup files, git exposure, config files]
+    template: hh-content-discovery
+
+  # Auth / Session
+  - hint: [auth flow, authentication, login testing, password reset, mfa bypass]
+    template: hh-auth-flow-tester
+  - hint: [session, session fixation, cookie security, session management]
+    template: hh-session-tester
+  - hint: [jwt, json web token, token testing, algorithm confusion]
+    template: hh-jwt-tester
+  - hint: [oauth, oidc, openid, redirect uri, scope escalation]
+    template: hh-oauth-tester
+  - hint: [credential, default credentials, credential stuffing, password policy]
+    template: hh-credential-tester
+
+  # Injection
+  - hint: [sqli, sql injection, sql]
+    template: hh-sqli-tester
+  - hint: [xss, cross-site scripting, cross site scripting]
+    template: hh-xss-tester
+  - hint: [command injection, os injection, rce, shell injection]
+    template: hh-command-injection
+  - hint: [ssti, template injection, server side template]
+    template: hh-ssti-tester
+  - hint: [xxe, xml external entity, xml injection]
+    template: hh-xxe-tester
+  - hint: [deserialization, insecure deserialization, gadget chain]
+    template: hh-deserialization
+
+  # Business logic
+  - hint: [idor, insecure direct object reference, object reference, broken object level]
+    template: hh-idor-tester
+  - hint: [access control, authorization, authz, forced browsing, privilege escalation]
+    template: hh-access-control
+  - hint: [race condition, toctou, concurrent requests, race window]
+    template: hh-race-condition
+  - hint: [payment, price manipulation, checkout, payment flow]
+    template: hh-payment-tester
+  - hint: [workflow, business logic, state machine, step skipping]
+    template: hh-workflow-tester
+
+  # API
+  - hint: [rest api, rest, mass assignment, http method coverage]
+    template: hh-rest-api-tester
+  - hint: [graphql, introspection, query depth, batching]
+    template: hh-graphql-tester
+  - hint: [rate limit, rate limiting, throttle, 429]
+    template: hh-rate-limit-tester
+  - hint: [ssrf, server side request forgery, cloud metadata]
+    template: hh-ssrf-tester
+  - hint: [cors, cross-origin resource sharing, origin bypass]
+    template: hh-cors-tester
+
+  # AI / LLM
+  - hint: [prompt injection, jailbreak, llm injection, system prompt]
+    template: hh-prompt-injection
+  - hint: [tool abuse, llm tool, function calling abuse, excessive agency]
+    template: hh-tool-abuse
+  - hint: [data exposure, training data, membership inference, llm data leak]
+    template: hh-data-exposure
+  - hint: [model manipulation, adversarial input, embedding inversion, llm manipulation]
+    template: hh-model-manipulation
+
+  # Infrastructure
+  - hint: [cloud config, cloud misconfiguration, s3 bucket, iam, aws]
+    template: hh-cloud-config
+  - hint: [cicd, ci cd, pipeline security, secret leakage, dependency confusion]
+    template: hh-cicd-security
+  - hint: [network, segmentation, firewall, management interface, internal service]
+    template: hh-network-tester
+
+  # Review pipeline
+  - hint: [validate, validation, reproduce, independent reproduction]
+    template: hh-review-validator
+  - hint: [judge, judging, evidence review, severity assessment]
+    template: hh-review-judge
+  - hint: [communicate, report writing, finding communication, disclosure]
+    template: hh-communicator
+  - hint: [traffic analysis, proxy watch, traffic analyst, passive traffic]
+    template: hh-traffic-analyst
+
+  # Coordination
+  - hint: [manager, coordinator, orchestrator, engagement manager]
+    template: hh-manager
+  - hint: [report, report assembler, final report]
+    template: hh-reporter-template
+
+workflows:
+  - hint: [web app assessment, web application pentest, web pentest]
+    workflow: hh-web-app-assessment
+  - hint: [api security review, api pentest, api review]
+    workflow: hh-api-security-review
+  - hint: [ai security, llm security, ai pentest]
+    workflow: hh-ai-security-review
+  - hint: [bug bounty, bug hunting, bounty hunt]
+    workflow: hh-bug-bounty-hunt
+  - hint: [pack development, develop the pack, build a pack]
+    workflow: hh-pack-dev

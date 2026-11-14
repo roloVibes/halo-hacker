@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "hh.alert event",
+  "description": "An alert requiring human attention: a critical finding, a playbook limit, a traffic hit, a scope edge, or an agent suggestion.",
+  "type": "object",
+  "required": ["kind", "severity"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": ["critical-finding", "playbook-limit", "traffic-hit", "scope-boundary", "suggestion"]
+    },
+    "severity": { "type": "string", "enum": ["info", "warn", "critical"] },
+    "finding_id": { "type": "string" },
+    "message": { "type": "string" },
+    "program_id": { "type": "string" }
+  }
+}

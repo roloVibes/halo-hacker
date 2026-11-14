@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "hh.agent.activity event",
+  "description": "An assessment agent started, finished, or produced a finding. Feeds the live dashboard.",
+  "type": "object",
+  "required": ["agent", "action"],
+  "additionalProperties": false,
+  "properties": {
+    "agent": { "type": "string", "description": "the agent role (e.g. hh-recon, hh-sqli-tester)" },
+    "action": { "type": "string", "enum": ["started", "finished", "produced-finding", "blocked", "hit-limit"] },
+    "playbook": { "type": "string" },
+    "finding_id": { "type": "string" },
+    "detail": { "type": "string" }
+  }
+}

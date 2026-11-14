@@ -101,7 +101,12 @@ contributes:
     - teams/hh-cloud-config-assessment.yaml
     - teams/hh-finding-validation-reporting.yaml
     - teams/hh-web-app-assessment.yaml
-  workflows: []
+  workflows:
+    - hh-web-app-assessment
+    - hh-api-security-review
+    - hh-ai-security-review
+    - hh-bug-bounty-hunt
+    - hh-pack-dev
   skills: skills
   commands: commands
   hooks: hooks/hooks.json
@@ -122,14 +127,19 @@ contributes:
       schema: events/hh.finding.json
       description: "one finding lifecycle moment (identified/reviewed/confirmed/terminal)"
     - kind: hh.project.switch
+      schema: events/hh.project.switch.json
       description: "the active project or bug-bounty program changed"
     - kind: hh.engagement.configured
+      schema: events/hh.engagement.configured.json
       description: "engagement scope, targets, or rules were updated"
     - kind: hh.agent.activity
+      schema: events/hh.agent.activity.json
       description: "an agent started, finished, or produced a finding"
     - kind: hh.ingest.item
+      schema: events/hh.ingest.item.json
       description: "an item was ingested into the knowledge base"
     - kind: hh.alert
+      schema: events/hh.alert.json
       description: "an alert requiring human attention (finding, limit, traffic hit, scope edge)"
   studio:
     sections:

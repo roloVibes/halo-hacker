@@ -1,0 +1,44 @@
+# Bug Bounty Hunt — lightweight, high-ROI, always-on traffic analysis
+name: hh-bug-bounty-hunt
+description: >-
+  Lightweight bug bounty workflow: recon, high-ROI testing (IDOR, access
+  control, XSS), always-on proxy traffic analysis feeding suggestions, and
+  H1-ready communication of confirmed findings.
+stages:
+  - id: recon-subdomain
+    title: Subdomain enumeration
+    brief: Passive + active subdomain discovery.
+    role: hh-subdomain-enum
+  - id: recon-endpoint
+    title: Endpoint discovery
+    brief: URL/path enumeration and JS source extraction.
+    role: hh-endpoint-discovery
+  - id: traffic
+    title: Traffic analysis
+    brief: Watch the proxy and suggest correlated next steps (always-on).
+    role: hh-traffic-analyst
+  - id: test-idor
+    title: IDOR testing
+    brief: Object reference enumeration (highest bug-bounty ROI).
+    role: hh-idor-tester
+    after: [recon-endpoint]
+  - id: test-access
+    title: Access control testing
+    brief: Forced browsing, role matrix, CORS misconfiguration.
+    role: hh-access-control
+    after: [recon-endpoint]
+  - id: test-xss
+    title: XSS testing
+    brief: Reflected/stored/DOM XSS.
+    role: hh-xss-tester
+    after: [recon-endpoint]
+  - id: validate
+    title: Independent validation
+    brief: Reproduce candidates independently.
+    role: hh-review-validator
+    after: [test-idor, test-access, test-xss]
+  - id: communicate
+    title: Communicate findings
+    brief: H1-ready disclosure drafts for confirmed findings.
+    role: hh-communicator
+    after: [validate]

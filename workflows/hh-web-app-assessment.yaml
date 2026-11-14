@@ -1,0 +1,85 @@
+# Web App Assessment — recon → discovery → auth → injection → logic → review
+name: hh-web-app-assessment
+description: >-
+  Full web application security assessment. Three parallel recon lanes feed
+  discovery, then auth, injection, and business-logic testing, then every
+  candidate flows through independent validation and judging before it may
+  be called confirmed.
+stages:
+  - id: recon-subdomain
+    title: Subdomain enumeration
+    brief: Passive + active subdomain discovery for the in-scope targets.
+    role: hh-subdomain-enum
+  - id: recon-port
+    title: Port scanning
+    brief: Service discovery and version fingerprinting on in-scope hosts.
+    role: hh-port-scanner
+  - id: recon-tech
+    title: Technology fingerprint
+    brief: Stack identification (headers, cookies, JS, errors, WAF/CDN).
+    role: hh-tech-fingerprint
+  - id: discovery-endpoint
+    title: Endpoint discovery
+    brief: URL/path enumeration, sitemap parsing, JS source extraction.
+    role: hh-endpoint-discovery
+    after: [recon-subdomain, recon-port, recon-tech]
+  - id: discovery-param
+    title: Parameter harvest
+    brief: Parameter extraction from forms, JS, API docs, and traffic.
+    role: hh-parameter-harvest
+    after: [recon-subdomain, recon-port, recon-tech]
+  - id: discovery-content
+    title: Content discovery
+    brief: Backup files, VCS leaks, config files, directory listing.
+    role: hh-content-discovery
+    after: [recon-subdomain, recon-port, recon-tech]
+  - id: auth-flow
+    title: Auth flow testing
+    brief: Login/logout/reset/MFA flow analysis and lockout behavior.
+    role: hh-auth-flow-tester
+    after: [discovery-endpoint, discovery-param]
+  - id: session
+    title: Session testing
+    brief: Cookie attributes, fixation, timeout, logout invalidation.
+    role: hh-session-tester
+    after: [discovery-endpoint, discovery-param]
+  - id: injection-sqli
+    title: SQL injection
+    brief: Error/union/blind/out-of-band SQLi across parameter types.
+    role: hh-sqli-tester
+    after: [discovery-param]
+  - id: injection-xss
+    title: Cross-site scripting
+    brief: Reflected/stored/DOM XSS, CSP bypass, gadget chains.
+    role: hh-xss-tester
+    after: [discovery-param]
+  - id: injection-command
+    title: Command injection
+    brief: OS command and argument injection, blind and out-of-band.
+    role: hh-command-injection
+    after: [discovery-param]
+  - id: logic-idor
+    title: IDOR testing
+    brief: Direct object reference enumeration, horizontal and vertical.
+    role: hh-idor-tester
+    after: [auth-flow, session]
+  - id: logic-access
+    title: Access control testing
+    brief: Forced browsing, method override, role matrix, CORS.
+    role: hh-access-control
+    after: [auth-flow, session]
+  - id: validate
+    title: Independent validation
+    brief: Reproduce every candidate independently before it may confirm.
+    role: hh-review-validator
+    after: [injection-sqli, injection-xss, injection-command, logic-idor, logic-access]
+  - id: judge
+    title: Judge evidence
+    brief: Evidence-chain review, severity, duplicate detection, decision.
+    role: hh-review-judge
+    after: [validate]
+  - id: report
+    title: Communicate findings
+    brief: Confirmed-only communication in the reader-model shape.
+    role: hh-communicator
+    after: [judge]

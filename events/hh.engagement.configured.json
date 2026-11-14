@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "hh.engagement.configured event",
+  "description": "Engagement scope, targets, rules, or tester identity were updated for the active project.",
+  "type": "object",
+  "required": ["engagement_id"],
+  "additionalProperties": false,
+  "properties": {
+    "engagement_id": { "type": "string" },
+    "program_id": { "type": "string" },
+    "test_type": { "type": "string", "enum": ["web-app", "api", "ai-security", "cloud-config", "network", "custom"] },
+    "x_header": { "type": "string" },
+    "tester_name": { "type": "string" }
+  }
+}

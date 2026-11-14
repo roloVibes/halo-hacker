@@ -1,0 +1,65 @@
+# API Security Review — discovery → auth → API testing → advanced → review
+name: hh-api-security-review
+description: >-
+  API-focused security assessment: endpoint discovery, JWT/OAuth testing,
+  REST/GraphQL coverage, then rate-limit/SSRF/CORS/IDOR, then validation
+  and judging.
+stages:
+  - id: discovery-endpoint
+    title: Endpoint discovery
+    brief: API endpoint enumeration from docs, JS, and traffic.
+    role: hh-endpoint-discovery
+  - id: discovery-tech
+    title: Technology fingerprint
+    brief: API stack identification and version detection.
+    role: hh-tech-fingerprint
+  - id: auth-jwt
+    title: JWT testing
+    brief: Algorithm confusion, key injection, claim manipulation, expiry.
+    role: hh-jwt-tester
+    after: [discovery-endpoint]
+  - id: auth-oauth
+    title: OAuth flow testing
+    brief: redirect_uri validation, state CSRF, scope escalation, PKCE.
+    role: hh-oauth-tester
+    after: [discovery-endpoint]
+  - id: api-rest
+    title: REST API testing
+    brief: Method coverage, content-type handling, mass assignment.
+    role: hh-rest-api-tester
+    after: [discovery-endpoint]
+  - id: api-graphql
+    title: GraphQL testing
+    brief: Introspection, query depth, batching, field suggestion.
+    role: hh-graphql-tester
+    after: [discovery-endpoint]
+  - id: advanced-rate
+    title: Rate limit testing
+    brief: Header spoofing, race windows, token rotation, 429 analysis.
+    role: hh-rate-limit-tester
+    after: [api-rest, api-graphql]
+  - id: advanced-ssrf
+    title: SSRF testing
+    brief: Cloud metadata, internal scan, protocol smuggling, blind SSRF.
+    role: hh-ssrf-tester
+    after: [api-rest, api-graphql]
+  - id: advanced-cors
+    title: CORS misconfiguration
+    brief: Null origin, wildcard+credentials, reflected origin, subdomain bypass.
+    role: hh-cors-tester
+    after: [api-rest, api-graphql]
+  - id: advanced-idor
+    title: IDOR testing
+    brief: Object reference enumeration across API resources.
+    role: hh-idor-tester
+    after: [auth-jwt, auth-oauth]
+  - id: validate
+    title: Independent validation
+    brief: Reproduce every candidate independently.
+    role: hh-review-validator
+    after: [advanced-rate, advanced-ssrf, advanced-cors, advanced-idor]
+  - id: judge
+    title: Judge evidence
+    brief: Evidence-chain review and final decision.
+    role: hh-review-judge
+    after: [validate]

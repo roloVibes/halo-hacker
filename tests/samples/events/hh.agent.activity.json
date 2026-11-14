@@ -1,0 +1,7 @@
+{
+  "agent": "hh-sqli-tester",
+  "action": "produced-finding",
+  "playbook": "discovery.input-handling",
+  "finding_id": "fnd-2026-0142",
+  "detail": "union-based SQLi confirmed on /api/users"
+}

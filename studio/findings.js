@@ -231,6 +231,36 @@ export function mount(el, api) {
         });
         content.appendChild(filterBar);
 
+        // Filter presets
+        const presetBar = h("div", null);
+        css(presetBar, { display: "flex", gap: "8px", marginBottom: "8px", flexWrap: "wrap" });
+        content.appendChild(presetBar);
+        const presets = [
+            { label: "All", state: "all" },
+            { label: "Needs review", state: "identified" },
+            { label: "Needs judgment", state: "reviewed" },
+            { label: "Confirmed", state: "confirmed" },
+        ];
+        for (const p of presets) {
+            const btn = h("button", null, p.label);
+            const active = state.filters.state === p.state;
+            css(btn, {
+                background: active ? "#1f6feb" : "#21262d",
+                border: "1px solid #30363d",
+                color: active ? "#fff" : "#e6edf3",
+                borderRadius: "14px",
+                padding: "3px 12px",
+                cursor: "pointer",
+                fontSize: "12px"
+            });
+            btn.addEventListener("click", () => {
+                state.filters.state = p.state;
+                state.selected = -1;
+                renderList();
+            });
+            presetBar.appendChild(btn);
+        }
+
         const searchInput = h("input", null);
         searchInput.type = "text";
         searchInput.placeholder = "Search ID, title, target...";
@@ -614,6 +644,9 @@ export function mount(el, api) {
             const displayState = data.display_state || finding.status || "";
             const severity = data.severity || finding.severity || "";
 
+            // Pipeline stepper (review/judge lifecycle)
+            addPipelineSection(finding, displayState);
+
             // Title
             const titleEl = h("h2", null, finding.title || "Untitled finding");
             css(titleEl, {
@@ -729,6 +762,75 @@ export function mount(el, api) {
 
         } catch (e) {
             renderError(`Failed to load finding ${id}: ${e.message}`);
+        }
+    }
+
+    function addPipelineSection(finding, displayState) {
+        // The review lifecycle, rendered as a horizontal stepper.
+        const STAGES = ["Identified", "Under review", "Validated", "Judged", "Confirmed", "Reported"];
+        const status = finding.status || "";
+        const validation = finding.validation || {};
+        const hasDecision = !!finding.reviewer_decision;
+
+        // Determine how far along the pipeline this finding is.
+        let reached = 0; // index of the last completed stage
+        if (status === "candidate" || status === "needs_validation" || displayState === "identified") {
+            reached = 0;
+        } else if (validation.status === "reproduced" || displayState === "reviewed") {
+            reached = 2;
+        } else if (hasDecision) {
+            reached = 3;
+        } else if (status === "not_reproduced" || status === "duplicate" || status === "rejected" || status === "withdrawn") {
+            reached = 1; // stalled at review
+        }
+        if (status === "confirmed" || displayState === "confirmed") reached = 4;
+        if (finding.reported || displayState === "reported") reached = 5;
+
+        const titleEl = h("h3", null, "Review pipeline");
+        css(titleEl, {
+            color: "#8b949e",
+            fontSize: "12px",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            margin: "4px 0 8px 0"
+        });
+        content.appendChild(titleEl);
+
+        const stepper = h("div", null);
+        css(stepper, {
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            flexWrap: "wrap",
+            marginBottom: "16px"
+        });
+        content.appendChild(stepper);
+
+        for (let i = 0; i < STAGES.length; i++) {
+            const isDone = i <= reached;
+            const dot = h("span", null);
+            css(dot, {
+                display: "inline-block",
+                width: "10px",
+                height: "10px",
+                borderRadius: "999px",
+                background: isDone ? "#1a7f37" : "#30363d",
+                marginRight: "5px"
+            });
+            const label = h("span", null, STAGES[i]);
+            css(label, {
+                color: isDone ? "#e6edf3" : "#6e7681",
+                fontSize: "12px"
+            });
+            const step = h("span", null);
+            css(step, { display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" });
+            step.append(dot, label);
+            stepper.appendChild(step);
+            if (i < STAGES.length - 1) {
+                const dash = h("span", null, "—");
+                css(dash, { color: "#30363d", margin: "0 6px", fontSize: "12px" });
+                stepper.appendChild(dash);
+            }
         }
     }
 

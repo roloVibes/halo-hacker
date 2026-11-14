@@ -1,0 +1,41 @@
+# AI/LLM Security Review — discovery → four AI lanes → review
+name: hh-ai-security-review
+description: >-
+  AI/LLM security assessment: endpoint discovery, then four parallel AI
+  testing lanes (prompt injection, tool abuse, data exposure, model
+  manipulation), then validation and judging.
+stages:
+  - id: discovery
+    title: Endpoint discovery
+    brief: Discover the LLM application surface and API endpoints.
+    role: hh-endpoint-discovery
+  - id: ai-prompt
+    title: Prompt injection
+    brief: Direct/indirect injection, jailbreak, system prompt extraction.
+    role: hh-prompt-injection
+    after: [discovery]
+  - id: ai-tool
+    title: Tool abuse
+    brief: Excessive agency, argument injection, tool output poisoning.
+    role: hh-tool-abuse
+    after: [discovery]
+  - id: ai-data
+    title: Data exposure
+    brief: Training data extraction, membership inference, context leakage.
+    role: hh-data-exposure
+    after: [discovery]
+  - id: ai-model
+    title: Model manipulation
+    brief: Adversarial input, embedding inversion, filter bypass.
+    role: hh-model-manipulation
+    after: [discovery]
+  - id: validate
+    title: Independent validation
+    brief: Reproduce every candidate independently.
+    role: hh-review-validator
+    after: [ai-prompt, ai-tool, ai-data, ai-model]
+  - id: judge
+    title: Judge evidence
+    brief: Evidence-chain review and final decision.
+    role: hh-review-judge
+    after: [validate]

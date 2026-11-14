@@ -10,6 +10,12 @@ What it brings:
 - command /halo-hacker:hh -- Engage, check status, or disengage the active assessment (scope as data: one state file, fail-closed inside the test window)
 - command /halo-hacker:hh-report -- Generate a leadership email or full report from confirmed findings
 - command /halo-hacker:projects -- List, create, switch, or archive bug bounty programs (multi-project tracking)
+- workflow halo-hacker/hh-web-app-assessment -- recon → discovery → auth → injection → logic → validate → judge
+- workflow halo-hacker/hh-api-security-review -- discovery → auth → API testing → advanced → validate → judge
+- workflow halo-hacker/hh-ai-security-review -- discovery → four AI lanes → validate → judge
+- workflow halo-hacker/hh-bug-bounty-hunt -- lightweight recon + high-ROI tests + always-on traffic analysis
+- workflow halo-hacker/hh-pack-dev -- research → code → triple review → validate → final judge
+- 40 methodology agent templates -- single-responsibility testers (recon/auth/injection/logic/API/AI/infra/review), compose them with the Builder
 - lineup halo-hacker--hh-web-app-assessment -- Orchestrator, recon, web tester, validator, judge and reporter for a web application assessment
 - lineup halo-hacker--hh-api-security-review -- The same shape for an API surface
 - lineup halo-hacker--hh-ai-security-review -- AI/LLM surface review (prompt injection, tool abuse, data exposure)

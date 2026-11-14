@@ -1,0 +1,7 @@
+{
+  "kind": "critical-finding",
+  "severity": "critical",
+  "finding_id": "fnd-2026-0142",
+  "message": "Critical SQL injection confirmed — pause testing for review?",
+  "program_id": "ukg-prod"
+}

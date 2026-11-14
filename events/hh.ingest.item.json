@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "hh.ingest.item event",
+  "description": "An item was ingested into the knowledge base, with its topic routing.",
+  "type": "object",
+  "required": ["id", "source_type"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string" },
+    "source_type": { "type": "string", "enum": ["notes", "pdf", "github", "youtube"] },
+    "source_ref": { "type": "string" },
+    "topic": { "type": "string" },
+    "trust_tier": { "type": "string", "enum": ["first-party", "third-party", "unclassified"] }
+  }
+}

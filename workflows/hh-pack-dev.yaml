@@ -1,0 +1,41 @@
+# Pack Development — research → code → triple review → validate → judge
+name: hh-pack-dev
+description: >-
+  Develops the halo-hacker pack itself. Research, then implementation, then
+  three independent review lanes before validation and final judgment — the
+  gate that keeps the pack bug-free.
+stages:
+  - id: research
+    title: Research
+    brief: Understand the problem space before writing code.
+    role: hh-orchestrator
+  - id: code
+    title: Implementation
+    brief: Write the implementation.
+    role: hh-api-tester
+    after: [research]
+  - id: review-1
+    title: Independent review 1
+    brief: First independent code review.
+    role: hh-judge
+    after: [code]
+  - id: review-2
+    title: Independent review 2
+    brief: Second independent code review.
+    role: hh-validator
+    after: [code]
+  - id: review-3
+    title: Independent review 3
+    brief: Third independent code review.
+    role: hh-review-judge
+    after: [code]
+  - id: validate
+    title: Run and verify
+    brief: Execute the code and verify behavior.
+    role: hh-review-validator
+    after: [review-1, review-2, review-3]
+  - id: final-judge
+    title: Final judgment
+    brief: Final correctness judgment before merge.
+    role: hh-review-judge
+    after: [validate]
