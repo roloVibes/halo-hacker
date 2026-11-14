@@ -288,7 +288,7 @@ if __name__ == "__main__":
     if len(args) == 1 and args[0] == "auto":
         root = auto_root()
         if root is None:
-            print("no active engagement — /hh engage first, or pass an "
+            print("no active engagement - /hh engage first, or pass an "
                   "engagement root explicitly", file=sys.stderr)
             sys.exit(1)
     elif len(args) == 1:

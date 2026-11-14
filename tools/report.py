@@ -49,7 +49,7 @@ def generate_report(store: FindingStore, *, actor: str = "hh-reporter") -> Path:
     eng = store.engagement()
     lines += [
         f"**Engagement:** {eng['engagement_id']}",
-        f"**Window:** {eng['window']['start']} → {eng['window']['expires']}",
+        f"**Window:** {eng['window']['start']} -> {eng['window']['expires']}",
         f"**Allowed activities:** {', '.join(eng['allowed_activities'])}",
         "",
         "## Executive summary",
