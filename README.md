@@ -1,20 +1,22 @@
 # halo-hacker
 
 An authorized security assessment capability pack for
-[Halo Harness](https://github.com/roloVibes/Halo-Harness): specialized
-agent roles, assessment team lineups, structured playbooks, engagement
-scope policy, finding schemas, an evidence-driven finding lifecycle, and
-a knowledge ingestion engine (notes, PDFs, GitHub, YouTube → a
-provenance-ledger knowledge base you own).
+[Halo Harness](https://github.com/roloVibes/Halo-Harness): 40
+single-responsibility methodology agent templates you compose into a
+testing team, pre-built workflows, real-time proxy traffic analysis
+(Caido/Burp), multi-project tracking for bug bounty, attack-path mapping
+(MITRE ATT&CK/ATLAS), and an evidence-driven finding lifecycle with
+independent validation and judging — plus a knowledge ingestion engine
+(notes, PDFs, GitHub, YouTube → a provenance-ledger knowledge base you own).
 
 ## Installation
 
 Four steps, about two minutes. Every command below was run and verified
-against halo 3.3.12.0.
+against halo 3.5.0.0.
 
 ### Before you start
 
-- **[Halo Harness](https://github.com/roloVibes/Halo-Harness) 3.3 or
+- **[Halo Harness](https://github.com/roloVibes/Halo-Harness) 3.5 or
   newer, already installed and initialized.** This is a Halo pack, not a
   standalone program — without Halo there is nothing to install it into.
   If you don't have Halo yet:
@@ -124,9 +126,16 @@ finding someone else can verify.
 
 | Piece | What it is |
 |---|---|
-| **8 agent roles** (`agents/`) | orchestrator, recon, web tester, API tester, AI security tester, validator (independent repro), judge (evidence review), reporter — Halo bio grammar + an `hh:` security-role contract block, model-agnostic (`default` everywhere). |
+| **40 methodology agent templates** (`agents/`) | Single-responsibility testers: recon (subdomain, port, tech fingerprint, endpoint, parameter, content), auth/session (auth flow, session, JWT, OAuth, credential), injection (SQLi, XSS, command, SSTI, XXE, deserialization), business logic (IDOR, access control, race condition, payment, workflow), API (REST, GraphQL, rate limit, SSRF, CORS), AI/LLM (prompt injection, tool abuse, data exposure, model manipulation), infrastructure (cloud, CI/CD, network), plus the review pipeline (validator, judge, communicator, traffic analyst) and coordination (manager, reporter). Each is a Builder starting point — `is_template: true`, `models.preference: default`, never a pinned model. The original 8 monolithic roles stay as `hh-orchestrator`, `hh-recon`, etc. |
+| **5 pre-built workflows** (`workflows/`) | web-app-assessment, api-security-review, ai-security-review, bug-bounty-hunt, pack-dev — every one flows candidates through independent validation → judging before anything may confirm. `builder-hints.yaml` maps natural language to the right template for the 3.6 Builder. |
 | **5 team lineups** (`teams/`) | web-app assessment, API security review, AI security review, cloud config assessment, finding validation + reporting. |
 | **16 playbooks** (`playbooks/`) | Declarative, schema-validated workflows across recon, discovery, validation, evidence, and reporting — with the approval gate mechanically enforced (any stage above `low-impact` must set `requires_approval: true`). Catalog: [PLAYBOOK_CATALOG.md](PLAYBOOK_CATALOG.md). |
+| **Real-time proxy traffic MCP** (`mcp/traffic_server.py`) | A third MCP server (granted with `mcp:traffic`): start/stop watching Caido or Burp, fetch recent sanitized pairs, list passive-check candidates, and get correlation suggestions (parameter reuse, auth-boundary crossings). Runs as a pack service (`traffic-watch`). |
+| **Multi-project tracking** (`tools/project_manager.py`, `/halo-hacker:projects`) | Bug bounty hunters jump between programs; each project has its own findings, evidence, and state. The active project is what the whole cockpit renders. |
+| **Live agent dashboard** (`studio/live.js`, `tools/live_view.py`) | Studio Live section: every live session with status and cwd, the live-lines feed, traffic-watch status — SSE-updated. |
+| **Ingest visualization** (`studio/ingest.js`, `tools/ingest_view.py`) | Studio Ingest section: source breakdown, trust tiers, topic routing to testing lanes, recent-ingest log. |
+| **Attack paths** (`studio/attack-paths.js`, `tools/attack_path_graph.py`) | Studio Attack Paths section: findings as a graph connected by requires/grants capability tokens — demonstrated (solid) vs projected (dashed) — plus MITRE ATT&CK/ATLAS technique mapping. |
+| **Real-time alerts** (5 `hh.alert.*` attention kinds) | Critical finding, traffic hit, playbook limit, scope boundary, and agent suggestion — each with action keys, plus 6 event kinds with schemas and sample fixtures. |
 | **Schemas** (`schemas/`) | Engagement (signed scope, test window, accounts, rate limits, data locality), scope-targets, playbook, and finding — where `status: confirmed` is structurally impossible without independent reproduction and a reviewer decision citing evidence. |
 | **Findings store + reporting** (`tools/`) | Hash-chained evidence ledger with tamper detection and checkpoints, fail-closed writes, controlled withdrawal, and draft report generation from confirmed records only. |
 | **Scanner normalizers** (`tools/normalizers.py`) | Nuclei and Semgrep output → schema-valid **candidate** findings — scanner output is a candidate, never a confirmation. |
@@ -135,8 +144,8 @@ finding someone else can verify.
 | **CVE enrichment** (`mcp/cve_server.py`) | A second MCP server (granted with `mcp:cve`): NVD 2.0 lookup with an unauthenticated rate pacer, CISA KEV checks (24 h cached), FIRST EPSS scores. Thin, stdlib-only, fail-never. |
 | **CVSS 3.1 scoring** (`tools/cvss31.py`) | Local, deterministic scoring: parse/validate vectors, base score + severity, one-call `score_vector`. Differential-verified 380/380 against the reference implementation. Findings store the vector; the score is always derived. |
 | **MITRE layer** (`tools/mitre_view.py`, `skills/attack-flow/`) | ATLAS 2026.10 ships in the pack; ATT&CK Enterprise caches on first use. Technique lookup/search, `technique_ids` on findings, and the attack-flow skill: per-finding mapping, the holistic engagement narrative, Navigator layer export, and capability-token chain candidates (projected vs demonstrated, always labeled). |
-| **Studio findings view** (`pack.yaml` studio, `tools/findings_view.py`) | A pack-declared Studio section: counts strip, findings table, and a lifecycle feed (`hh.finding` events). Display states: identified / reviewed / confirmed. |
-| **Report engine** (`reporting/`, `commands/hh-report.md`) | Leadership email (5-part shape, mailto link — the pack generates, never sends) and full findings report (exec summary first, parallel per-finding template, evidence appendices) — confirmed findings only, driven by the communicate-findings doctrine. |
+| **Studio findings view** (`pack.yaml` studio, `tools/findings_view.py`) | A pack-declared Studio section: counts strip, findings table, a review-pipeline stepper (Identified → Under review → Validated → Judged → Confirmed → Reported), filter presets, and a lifecycle feed (`hh.finding` events). Display states: identified / reviewed / confirmed. |
+| **Report engine** (`reporting/`, `commands/hh-report.md`, `commands/communicate.md`) | Leadership email (5-part shape, mailto link — the pack generates, never sends) and full findings report (exec summary first, parallel per-finding template, evidence appendices) — confirmed findings only, driven by the communicate-findings doctrine. |
 | **Engage-mode** (`tools/engage.py`, `hooks/`) | `/hh` engage/status/disengage: the engagement record as the boundary — one state file, fail-closed engage inside the test window, a pack hook gating shell commands against engagement scope. Scope as data, not location. |
 | **Findings import** (`tools/import_findings.py`) | Field-user intake: manual entry, pack-schema JSON, and scanner output (Nuclei/Semgrep) — everything enters as a **candidate** with provenance (source: import/scanner) and real ledger rows; an import can never arrive confirmed. |
 | **Passive traffic observer** (`tools/passive_checks.py`, `tools/traffic_observer.py`) | While a human tester works through Caido or Burp, the pack reads their proxy traffic (read-only polling) and surfaces **candidate** findings as they test: declarative checks (missing security headers, verbose banners, stack traces, internal IPs, cookie flags, reflected params), scope-gated, redaction applied before evidence, deduped, never sends anything. The tester tests; the pack watches. |
@@ -166,20 +175,20 @@ the MCP server itself is standard-library-only (no MCP SDK — the SDK's
 
 ## Status
 
-0.9.0 — **framework conformance**: the pack now uses the
-[Halo pack template](https://github.com/roloVibes/halo-pack-template) end to
-end. The repo root is the pack (so `halo pack sources add` + `halo pack
-install` work), the template's project files are in place (`HALO-PACK.md`,
-`CHANGELOG.md`, `tests/`, `.github/workflows/pack-test.yml`), and
-`/halo-hacker:hh` (engage / status / disengage) exists as a command instead of
-being prose. **Reinstall once** — an install recorded from `./halo-hacker/pack`
-points at a folder that no longer exists.
+1.0.0 — **the team you compose**. Methodology became agents: 40
+single-responsibility tester templates replace the 8 monolithic roles, so you
+compose a testing team per engagement instead of picking from a fixed lineup.
+Plus live proxy traffic analysis, multi-project tracking for bug bounty,
+real-time alerts, attack-path mapping, the findings review/judge pipeline in
+Studio, and 5 pre-built workflows. The original 8 roles stay as
+`hh-orchestrator`, `hh-recon`, etc. **Reinstall once** — the `halo_api` floor
+moved to 1.4 and `halo.min` to 3.5.
 
-Verified on this tree at 0.9.0: `halo pack test .` → **32 checks, 0 failed**
+Verified on this tree at 1.0.0: `halo pack test .` → **103 checks passed**
 (1 skip: this machine has no python runtime registered for the fleet
-capability), `halo pack inspect .` → `problems: none`, and the pack's own
-behaviour suite → **152 passed** (it was 39 failed before 0.9.0: the shipped
-engagement fixture carried a test window that expired 2026-11-04).
+capability; 8 "own test" smoke checks fail locally because Halo's Python lacks
+pytest — CI installs it with `--with pytest` and the behaviour suite below is
+the real gate), and the pack's own behaviour suite → **170 passed**.
 
 Everything from the earlier releases still stands: the CVE enrichment server,
 local CVSS 3.1 scoring (differential-verified against the reference
