@@ -226,7 +226,7 @@ def test_cli_auto_mode_fails_loudly_without_engagement(tmp_path, monkeypatch):
 # ---------------------------------------------------------------- the bundle
 
 def test_browser_js_csp_hygiene():
-    js = _JS.read_text()
+    js = _JS.read_text(encoding="utf-8")
     assert "export function mount" in js
     assert "innerHTML" not in js, "CSP/XSS: no innerHTML anywhere"
     assert "<style" not in js, "CSP: no inline style elements"
@@ -243,7 +243,7 @@ def test_browser_js_node_syntax_check():
         pytest.skip("SKIPPED -- node not on PATH (ES module syntax check)")
     import tempfile
     with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False) as fh:
-        fh.write(_JS.read_text())
+        fh.write(_JS.read_text(encoding="utf-8"))
         path = fh.name
     r = subprocess.run([node, "--check", path], capture_output=True, text=True)
     assert r.returncode == 0, f"node --check failed:\n{r.stderr}"
