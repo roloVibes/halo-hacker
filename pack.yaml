@@ -143,14 +143,15 @@ contributes:
       description: "an alert requiring human attention (finding, limit, traffic hit, scope edge)"
   studio:
     sections:
-      # Section 1: Findings — review/judge pipeline (first section, carries config_form)
-      - id: halo-hacker-findings
-        title: Findings
-        blurb: Findings for the active engagement — identified, reviewed, confirmed.
+      - id: halo-hacker
+        title: Halo Hacker
+        blurb: Authorized security assessment — findings, projects, engagement, live, ingest, attack paths.
         help: >-
-          Full review pipeline per finding: pipeline visualization,
-          validator verdict, judge decision, evidence chain, traffic
-          correlation. Filter by state, severity, or project.
+          Everything the pack offers in one section: the findings browser with
+          its review pipeline, the multi-project switcher, engagement setup,
+          the live agent dashboard, ingest visualization, and attack-path
+          mapping. The findings browser is the pack's own script (grant
+          studio-script to run it).
         panels:
           - id: findings-browser
             title: Findings browser
@@ -172,7 +173,7 @@ contributes:
             w: 24
             h: 12
           - id: findings-table
-            title: Table
+            title: Findings table
             kind: table
             source: "data:findings/summary.json"
             columns: [finding_id, title, severity, state, target_ref, source, updated]
@@ -184,15 +185,6 @@ contributes:
             w: 24
             h: 40
             help: "hh.finding events as they happen"
-      # Section 2: Projects — multi-program switcher
-      - id: halo-hacker-projects
-        title: Projects
-        blurb: Switch between bug bounty programs and engagements.
-        help: >-
-          Manage multiple programs: switch active project, create new
-          engagements, archive completed ones. Each project has its own
-          findings, evidence, and state.
-        panels:
           - id: projects-view
             title: Projects
             kind: bundle
@@ -200,71 +192,52 @@ contributes:
             w: 24
             h: 120
             help: >-
-              Program list with platform, finding count, and state.
-              Click to switch; the entire cockpit refreshes for that project.
-      # Section 3: Engagement — scope, rules, and tester identity
-      - id: halo-hacker-engage
-        title: Engagement
-        blurb: Configure the active engagement — objective, scope, rules, identity.
-        help: >-
-          Set objective, scope (targets and exclusions), test type, rules of
-          engagement, X-header for traffic marking, and tester identity.
-        panels:
+              Multi-program switcher: list bug bounty programs with platform,
+              finding count, and state. Click to switch; the entire cockpit
+              refreshes for that project.
           - id: engage-form
             title: Engagement setup
             kind: form
             w: 24
             h: 160
             help: >-
-              Objective, scope, test type, rules, X-header, tester name and
-              email for the active engagement. Saved to pack settings.
-      # Section 4: Live — real-time agent dashboard
-      - id: halo-hacker-live
-        title: Live
-        blurb: See every agent working in real time.
-        help: >-
-          Agent lanes with status, current task, and last tool call.
-          Traffic watch status, alert feed, and coverage map.
-        panels:
+              Objective, scope, test type, rules of engagement, X-header for
+              traffic marking, and tester identity for the active engagement.
           - id: live-dashboard
-            title: Agent dashboard
+            title: Live
             kind: bundle
             source: studio/live.js
             w: 24
             h: 140
-      # Section 5: Ingest — knowledge ingestion visualization
-      - id: halo-hacker-ingest
-        title: Ingest
-        blurb: What was ingested — sources, topics, routing, coverage.
-        panels:
+            help: >-
+              Agent dashboard: every live session with status and cwd, the
+              live-lines feed, traffic-watch status.
           - id: ingest-view
-            title: Ingest dashboard
+            title: Ingest
             kind: bundle
             source: studio/ingest.js
             w: 24
             h: 120
-      # Section 5: Attack Paths — MITRE ATT&CK / ATLAS
-      - id: halo-hacker-attack-paths
-        title: Attack Paths
-        blurb: Findings mapped to MITRE ATT&CK and ATLAS attack paths.
-        help: >-
-          Force-directed graph of findings connected by capability-token
-          chains. Demonstrated (solid) vs projected (dashed) paths.
-          ATT&CK and ATLAS heatmaps. Navigator layer export.
-        panels:
+            help: >-
+              Ingest dashboard: source breakdown, trust tiers, topic routing
+              to testing lanes, recent-ingest log.
           - id: attack-paths-graph
-            title: Attack path graph
+            title: Attack paths
             kind: bundle
             source: studio/attack-paths.js
             w: 24
             h: 160
+            help: >-
+              Attack-path graph: findings connected by requires/grants
+              capability tokens — demonstrated (solid) vs projected (dashed) —
+              plus MITRE ATT&CK/ATLAS technique mapping.
     palette:
-      - {id: open-findings, label: Open findings browser, action: "route:halo-hacker-findings/findings-browser"}
-      - {id: open-projects, label: Open projects, action: "route:halo-hacker-projects"}
-      - {id: open-engage, label: Open engagement setup, action: "route:halo-hacker-engage"}
-      - {id: open-live, label: Open live dashboard, action: "route:halo-hacker-live"}
-      - {id: open-ingest, label: Open ingest dashboard, action: "route:halo-hacker-ingest"}
-      - {id: open-attack-paths, label: Open attack paths, action: "route:halo-hacker-attack-paths"}
+      - {id: open-findings, label: Open the findings browser, action: "route:halo-hacker/findings-browser"}
+      - {id: open-projects, label: Open projects, action: "route:halo-hacker/projects-view"}
+      - {id: open-engage, label: Open engagement setup, action: "route:halo-hacker/engage-form"}
+      - {id: open-live, label: Open live dashboard, action: "route:halo-hacker/live-dashboard"}
+      - {id: open-ingest, label: Open ingest dashboard, action: "route:halo-hacker/ingest-view"}
+      - {id: open-attack-paths, label: Open attack paths, action: "route:halo-hacker/attack-paths-graph"}
     attention:
       hh.alert.critical-finding:
         label: "Critical finding"
