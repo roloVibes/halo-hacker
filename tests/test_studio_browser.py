@@ -242,7 +242,8 @@ def test_browser_js_node_syntax_check():
     if not node:
         pytest.skip("SKIPPED -- node not on PATH (ES module syntax check)")
     import tempfile
-    with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False) as fh:
+    with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False,
+                                     encoding="utf-8") as fh:
         fh.write(_JS.read_text(encoding="utf-8"))
         path = fh.name
     r = subprocess.run([node, "--check", path], capture_output=True, text=True)
