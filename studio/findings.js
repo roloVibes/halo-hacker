@@ -148,7 +148,17 @@ export function mount(el, api) {
                 renderList();
             }
         } catch (e) {
-            renderError(e.message);
+            // No engagement yet means the findings files were never written:
+            // show the empty state, not a red error. A real read error still errors.
+            if (e && e.message && e.message.indexOf("HTTP 404") !== -1) {
+                state.rows = [];
+                state.engagement = null;
+                state.generated = null;
+                updateHeader();
+                renderList();
+            } else {
+                renderError(e.message);
+            }
         }
     }
 
