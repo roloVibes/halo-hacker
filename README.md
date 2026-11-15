@@ -9,7 +9,7 @@ testing team, pre-built workflows, real-time proxy traffic analysis
 independent validation and judging — plus a knowledge ingestion engine
 (notes, PDFs, GitHub, YouTube → a provenance-ledger knowledge base you own).
 
-**Community:** questions, ideas and help on the [Halo Harness Discord server](https://discord.gg/vuJvKjS9A).
+**Community:** questions, ideas and help on the [Halo Harness Discord server](https://discord.gg/NXWXdg7B6v).
 
 ## Installation
 
