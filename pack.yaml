@@ -145,14 +145,45 @@ contributes:
     sections:
       - id: halo-hacker
         title: Halo Hacker
-        blurb: Authorized security assessment — findings, projects, engagement, live, ingest, attack paths.
+        blurb: Authorized security assessment — start with "How this works", set up an engagement, then watch findings come in.
         help: >-
-          Everything the pack offers in one section: the findings browser with
-          its review pipeline, the multi-project switcher, engagement setup,
-          the live agent dashboard, ingest visualization, and attack-path
+          Everything the pack offers in one section, in the order you use it:
+          the "How this works" guide first, then engagement setup, the live
+          agent dashboard, the findings browser with its review pipeline, the
+          multi-project switcher, ingest visualization, and attack-path
           mapping. The findings browser is the pack's own script (grant
           studio-script to run it).
         panels:
+          - id: guide
+            title: How this works
+            kind: markdown
+            source: studio/GUIDE.md
+            w: 24
+            h: 70
+            help: >-
+              The whole pack, step by step: enable and grant, set up an
+              engagement, watch the live dashboard, review findings, report.
+              Read this first.
+          - id: engage-form
+            title: Settings & engagement
+            kind: form
+            w: 24
+            h: 160
+            help: >-
+              The pack's settings form: the knowledge-base vault and proxy
+              first, then the active engagement — objective, scope, test type,
+              rules of engagement, X-header for traffic marking, and tester
+              identity. (A form panel always shows the whole settings schema;
+              the engagement fields are the second half.)
+          - id: live-dashboard
+            title: Live
+            kind: bundle
+            source: studio/live.js
+            w: 24
+            h: 140
+            help: >-
+              Agent dashboard: every live session with status and cwd, the
+              live-lines feed, traffic-watch status.
           - id: findings-browser
             title: Findings browser
             kind: bundle
@@ -195,23 +226,6 @@ contributes:
               Multi-program switcher: list bug bounty programs with platform,
               finding count, and state. Click to switch; the entire cockpit
               refreshes for that project.
-          - id: engage-form
-            title: Engagement setup
-            kind: form
-            w: 24
-            h: 160
-            help: >-
-              Objective, scope, test type, rules of engagement, X-header for
-              traffic marking, and tester identity for the active engagement.
-          - id: live-dashboard
-            title: Live
-            kind: bundle
-            source: studio/live.js
-            w: 24
-            h: 140
-            help: >-
-              Agent dashboard: every live session with status and cwd, the
-              live-lines feed, traffic-watch status.
           - id: ingest-view
             title: Ingest
             kind: bundle
@@ -232,10 +246,11 @@ contributes:
               capability tokens — demonstrated (solid) vs projected (dashed) —
               plus MITRE ATT&CK/ATLAS technique mapping.
     palette:
+      - {id: open-guide, label: How this works (start here), action: "route:halo-hacker/guide"}
+      - {id: open-engage, label: Open settings & engagement, action: "route:halo-hacker/engage-form"}
+      - {id: open-live, label: Open live dashboard, action: "route:halo-hacker/live-dashboard"}
       - {id: open-findings, label: Open the findings browser, action: "route:halo-hacker/findings-browser"}
       - {id: open-projects, label: Open projects, action: "route:halo-hacker/projects-view"}
-      - {id: open-engage, label: Open engagement setup, action: "route:halo-hacker/engage-form"}
-      - {id: open-live, label: Open live dashboard, action: "route:halo-hacker/live-dashboard"}
       - {id: open-ingest, label: Open ingest dashboard, action: "route:halo-hacker/ingest-view"}
       - {id: open-attack-paths, label: Open attack paths, action: "route:halo-hacker/attack-paths-graph"}
     attention:

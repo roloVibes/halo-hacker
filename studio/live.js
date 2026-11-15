@@ -148,7 +148,6 @@ export function mount(el, api) {
         const headerContainer = rootElement.querySelector('#header-container');
         const sessionsContainer = rootElement.querySelector('#sessions-container');
         const linesFeed = rootElement.querySelector('#lines-feed');
-        const trafficNoteEl = rootElement.querySelector('.traffic-note'); // Assuming it gets an ID or class
         const timestampEl = rootElement.querySelector('#timestamp');
 
         // Show loading state
@@ -182,18 +181,13 @@ export function mount(el, api) {
                 if (linesEl) linesFeed.appendChild(linesEl);
             }
 
-            // Render traffic note
-            if (trafficNoteEl) { // It might not exist initially
-                const newNote = renderTrafficNote(data.harness);
-                if (newNote && !trafficNoteEl.parentNode) {
-                    rootElement.appendChild(newNote); // Add if not present
-                } else if (!newNote && trafficNoteEl.parentNode) {
-                    trafficNoteEl.remove(); // Remove if not needed
-                }
-            } else {
-                 const newNote = renderTrafficNote(data.harness);
-                 if (newNote) rootElement.appendChild(newNote);
-            }
+            // Render traffic note (replace in place; query fresh each time —
+            // the element is re-created when harness state flips, so a cached
+            // reference can be detached)
+            const note = rootElement.querySelector('.traffic-note');
+            const newNote = renderTrafficNote(data.harness);
+            if (note) note.remove();
+            if (newNote) rootElement.appendChild(newNote);
 
 
         } catch (error) {
@@ -258,13 +252,15 @@ export function mount(el, api) {
         );
         el.appendChild(rootElement);
 
-        // Render initial loading state
-        rootElement.innerHTML = ''; // Clear before adding loading
-        rootElement.appendChild(renderLoadingState());
-
-        // Render header placeholder
+        // Header placeholder (kept: loadList queries it by id on every refresh)
         const headerContainer = rootElement.querySelector('#header-container');
         if (headerContainer) headerContainer.appendChild(renderHeader("Loading..."));
+
+        // Loading state goes INSIDE the sessions container, never over the
+        // whole root: wiping rootElement here removes the very containers
+        // loadList() looks up, and the panel would sit on "Loading..." forever.
+        const sessionsContainer = rootElement.querySelector('#sessions-container');
+        if (sessionsContainer) sessionsContainer.appendChild(renderLoadingState());
 
         // Fetch initial data
         loadList().then(() => {

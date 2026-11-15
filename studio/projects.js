@@ -31,11 +31,15 @@ function badge(color, text) {
     return wrap;
 }
 
+// A 404 on a pack data file is NOT an error for this panel: projects.json is
+// only written once the first project is created, so a fresh install (zero
+// projects) is the normal state. Treat it as an empty project list.
 function fetchJson(path) {
     const headers = {};
     const token = sessionStorage.getItem("halo-studio-token");
     if (token) headers["Authorization"] = "Bearer " + token;
     return fetch(path, { headers }).then(r => {
+        if (r.status === 404) return JSON.stringify({ projects: [], active_project: null, generated: null });
         if (!r.ok) throw new Error(path + " -> HTTP " + r.status);
         return r.text();
     });
@@ -63,7 +67,8 @@ export function mount(el, api) {
         generated: null,
         lastJson: null,
         showNewForm: false,
-        timer: null
+        timer: null,
+        errored: false
     };
 
     // Root container
@@ -171,6 +176,7 @@ export function mount(el, api) {
     // ─── Data loading ──────────────────────────────────────────────
 
     async function loadList() {
+        if (state.errored) return; // a failing endpoint is retried by Refresh/Retry, not by every poll/SSE tick
         try {
             const json = await fetchJson(LIST_URL);
             if (json === state.lastJson) return;
@@ -179,6 +185,7 @@ export function mount(el, api) {
             state.projects = data.projects || [];
             state.activeProject = data.active_project || null;
             state.generated = data.generated || null;
+            state.errored = false;
             updateHeader();
             renderList();
         } catch (e) {
@@ -658,6 +665,7 @@ export function mount(el, api) {
     }
 
     function renderError(msg) {
+        state.errored = true; // SSE / poll must not hammer a failing endpoint
         content.replaceChildren();
         const div = h("div", null);
         css(div, {
