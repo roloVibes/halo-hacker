@@ -4,6 +4,24 @@ Each release of the pack, newest first: the version (pack.yaml's `version`), the
 who runs it. A change they must act on also gets a `migrations` entry in pack.yaml, which `halo pack update` prints
 before it replaces anything.
 
+## 1.0.6 - 2026-11-15
+
+**The Studio section actually works, top to bottom.** Three panels that misbehaved on a fresh install now behave,
+and the section reads in the order a tester uses it.
+
+- **The Live panel renders.** Its `initialize()` wiped its own containers with `rootElement.innerHTML = ''` before
+  `loadList()` looked them up by id — a successful fetch had nowhere to draw, so the panel sat on "Loading..."
+  forever. The loading state now goes inside the sessions container.
+- **Projects treats zero projects as empty, not an error.** `projects.json` is only written once the first project
+  is created, so a fresh install returned HTTP 404 and the panel showed an error — and refired it on every
+  live-update tick. A 404 now renders the normal "No projects yet" state, and a failing endpoint is retried by the
+  Refresh/Retry button, not by every poll or SSE event.
+- **The section reads in the order you use it.** A new **How this works** guide opens the section (step-by-step:
+  enable and grant, set the vault, describe the engagement, then Live / Findings / Projects / Ingest / Attack
+  paths); Settings & engagement is second (renamed from "Engagement setup" — a form panel always shows the whole
+  settings schema, vault and proxy first, the engagement fields after), then Live, the findings panels, Projects,
+  Ingest and Attack paths. The palette leads with the guide.
+
 ## 1.0.0 - 2026-11-14
 
 **The team you compose.** Methodology became agents: 40 single-responsibility tester templates replace the 8
