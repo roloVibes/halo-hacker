@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://rolovibes.example/halo-hacker/coverage.schema.json",
+  "title": "Halo Hacker coverage entry",
+  "description": "What was examined on one surface for one risk class, INCLUDING negative results — so an absent finding is never read as a clean target (the ARTEX coverage-ledger rule, reimplemented). Negative outcomes demand evidence or a reason; the ledger builder (tools/assets.py) surfaces missing ones as gaps rather than blocking.",
+  "type": "object",
+  "required": ["engagement_id", "surface", "risk_area", "outcome"],
+  "additionalProperties": false,
+  "properties": {
+    "engagement_id": { "type": "string" },
+    "surface": {
+      "type": "string",
+      "description": "What was examined: a URL, endpoint, parameter, host, asset_id, or feature."
+    },
+    "asset_ref": {
+      "type": "string",
+      "description": "Optional asset_id this surface resolves to (the anchor that makes coverage a query over the asset model)."
+    },
+    "risk_area": {
+      "type": "string",
+      "description": "Risk class, e.g. sqli, xss, idor, authz, ssrf — typically the playbook category / vulnclass."
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["reported", "no_issue_found", "ruled_out", "not_applicable", "needs_follow_up"]
+    },
+    "evidence_ref": {
+      "type": "string",
+      "description": "REQUIRED for no_issue_found: a ledger ref, finding id, or traffic snapshot id that shows the test. A claim of 'clean' with no evidence is a gap."
+    },
+    "reason": {
+      "type": "string",
+      "description": "REQUIRED for ruled_out and not_applicable: why. Unexplained exclusions are gaps."
+    },
+    "finding_ref": {
+      "type": "string",
+      "description": "For outcome=reported: the finding_id raised."
+    },
+    "worker": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

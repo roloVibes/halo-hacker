@@ -19,6 +19,7 @@ Below: the shipped catalog. Every playbook is model-independent (enforced by tes
 | discovery.cloud-iam-config | discovery | cloud | CSP config guides |
 | validation.low-impact-repro | validation | validation | — |
 | validation.active-approval-gated | validation | validation | requires_approval: true |
+| validation.retest | validation | validation | verdict separate from status; judge-gated |
 | evidence.sanitize-and-store | evidence | evidence | content-addressed |
 | reporting.draft-from-confirmed | reporting | reporting | generated, never hand-written |
 

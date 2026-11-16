@@ -281,6 +281,42 @@
         "pattern": "^(T\\d{4}(\\.\\d{3})?|AML\\.T\\d{4}(\\.\\d{3})?)$"
       },
       "description": "MITRE ATT&CK (T####) and ATLAS (AML.T####) technique ids this finding maps to (0.6.0). Verify ids with tools/mitre_view.py lookup \u2014 never cite an unverified id."
+    },
+    "asset_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "G1: asset_ids (tools/assets.py) this finding is anchored to — the link that makes asset test-coverage a query. Supersedes the free-string target_ref when present."
+    },
+    "counterevidence": {
+      "type": "string",
+      "description": "What was tested and did NOT work (ARTEX graft). The negative space that keeps a finding honest — recorded, not lost."
+    },
+    "confidence_rationale": {
+      "type": "string",
+      "description": "Why the conclusion holds (ARTEX graft): the reasoning that survives an adversarial read."
+    },
+    "retest": {
+      "type": "object",
+      "description": "G3: the most recent retest record, kept SEPARATE from status (the human/judge disposition). A retest proposes a verdict; status moves only through the normal judge gate — mirroring ARTEX keeping finding_retests apart from findings.status.",
+      "additionalProperties": false,
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "enum": ["reproduced", "fixed", "inconclusive"],
+          "description": "reproduced=still works; fixed=no longer reproduces with a working control; inconclusive=the evidence bar for neither is met. A single failed request never proves fixed."
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "THIS run's evidence (ledger refs / snapshot ids) — never the original filing's. A verdict without this run's evidence is a prose assumption and does not count."
+        },
+        "counterargument": {
+          "type": "string",
+          "description": "The opposite case argued along five axes before the verdict: reachability, preconditions, reproducibility, scope, claimed impact."
+        },
+        "tested_at": { "type": "string", "format": "date-time" },
+        "tester_ref": { "type": "string" }
+      }
     }
   },
   "allOf": [

@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://rolovibes.example/halo-hacker/asset.schema.json",
+  "title": "Halo Hacker asset record",
+  "description": "One in-scope asset (an observation, never agent-authored graph structure). Six types with per-type identity keys; the program computes parentage and dedupe (tools/assets.py), agents only submit observations. Inspired by ARTEX's asset layer (AGPL) — reimplemented, no code shared. Identity is deliberately loose: dedupe keys are derived per type, so the same surface seen twice collapses to one record.",
+  "type": "object",
+  "required": ["asset_id", "engagement_id", "type", "identity"],
+  "additionalProperties": false,
+  "properties": {
+    "asset_id": {
+      "type": "string",
+      "description": "Stable id derived from type+identity by the store (not chosen by the agent)."
+    },
+    "engagement_id": { "type": "string" },
+    "type": {
+      "type": "string",
+      "enum": ["root_domain", "subdomain", "ip", "service", "endpoint", "app"]
+    },
+    "identity": {
+      "type": "object",
+      "description": "The dedupe key for this type. root_domain/subdomain: {domain}. ip: {ip}. service: {host, port, scheme}. endpoint: {method, url}. app: {name} or {bundle_id}.",
+      "properties": {
+        "domain": { "type": "string" },
+        "ip": { "type": "string" },
+        "host": { "type": "string" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "scheme": { "type": "string", "enum": ["http", "https", "other"] },
+        "method": { "type": "string" },
+        "url": { "type": "string" },
+        "name": { "type": "string" },
+        "bundle_id": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "parent_ref": {
+      "type": "string",
+      "description": "asset_id of the containing asset, computed by the program (root_domain→subdomain→service→endpoint). Never set by the agent."
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Enrichment observations: status_code, page_title, technologies[], open_ports[], content_length, favicon hash, etc. Free-form observations; dedupe never keys on these.",
+      "additionalProperties": true
+    },
+    "first_seen": { "type": "string", "format": "date-time" },
+    "last_seen": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "string",
+      "enum": ["recon", "tester", "scanner", "import", "passive-traffic"],
+      "description": "How the observation entered (mirrors the finding source vocabulary)."
+    }
+  }
+}

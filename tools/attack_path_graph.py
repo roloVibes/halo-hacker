@@ -102,6 +102,44 @@ def build(findings: list[dict] | None = None) -> dict:
     }
 
 
+def persist_chain_candidates(graph: dict, engagement_root) -> dict:
+    """G5 (from _research/ARTEX-REVIEW.md): persist chain CANDIDATES so a
+    proposed chain survives across halo sessions, WITHOUT storing a graph.
+
+    The attack path itself stays a projection over requires/grants — never
+    stored. What persists is the candidate edge (from -> to on a capability
+    token) plus its projected/demonstrated label, so the next session can
+    re-derive the path and tell 'we proposed this chain' from 'we
+    demonstrated it'. Written to <engagement>/context/chain-candidates.json.
+    Returns the persisted record."""
+    import json as _json
+    from pathlib import Path as _Path
+
+    candidates = [
+        {
+            "from": e["from"],
+            "to": e["to"],
+            "token": e["token"],
+            "state": "demonstrated" if e.get("demonstrated") else "projected",
+        }
+        for e in graph.get("edges", [])
+    ]
+    record = {
+        "candidates": candidates,
+        "count": len(candidates),
+        "demonstrated": sum(1 for c in candidates if c["state"] == "demonstrated"),
+        "projected": sum(1 for c in candidates if c["state"] == "projected"),
+        "generated": graph.get("generated"),
+        "note": ("Candidates only — the attack PATH is a projection over "
+                 "requires/grants, recomputed each session, never stored."),
+    }
+    ctx = _Path(engagement_root) / "context"
+    ctx.mkdir(parents=True, exist_ok=True)
+    (ctx / "chain-candidates.json").write_text(
+        _json.dumps(record, indent=2), encoding="utf-8")
+    return record
+
+
 def _now() -> str:
     from datetime import datetime, timezone
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
