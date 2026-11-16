@@ -4,6 +4,22 @@ Each release of the pack, newest first: the version (pack.yaml's `version`), the
 who runs it. A change they must act on also gets a `migrations` entry in pack.yaml, which `halo pack update` prints
 before it replaces anything.
 
+## 1.0.7 - 2026-11-16
+
+**Two live-use bugs found by actually exercising the pack on Halo 3.6.0.0, both fixed and regression-pinned.**
+
+- **`kev_check` never worked — now it does.** The handler referenced the `any(...)` generator's loop variable
+  outside its scope (`results.append(found_item)` after the generator had closed), so every online call raised
+  `NameError` and the blanket `except` masked it as `{"ok": false, "error": "network"}` — a 100% silent failure
+  that looked like CISA being unreachable. The result list is now built from an id-indexed dict, and a new test
+  exercises the happy path (a known-exploited CVE and a non-KEV id through the real handler) so it can't regress
+  behind offline-only coverage.
+- **A missing local model no longer fails as N cryptic 404s.** The default distill lane points at
+  `qwen3-coder:30b`; on a host without it, every document failed with a bare `HTTP Error 404: Not Found` and the
+  batch reported N unrelated errors. The ingest tools now preflight the Ollama lane once (host reachable, model
+  present) and refuse the whole call up front with an actionable message that names the available models and the
+  `HALO_HACKER_MODEL` override.
+
 ## 1.0.6 - 2026-11-15
 
 **The Studio section actually works, top to bottom.** Three panels that misbehaved on a fresh install now behave,

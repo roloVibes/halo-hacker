@@ -32,10 +32,61 @@ def _config_str(key: str, default: str = "") -> str:
 
 def _client():
     """Local lane by default. Hosted = explicit opt-in via HALO_HACKER_HOSTED=1
-    (privacy: user content leaves the machine)."""
+    (privacy: user content leaves the machine).
+
+    Fails FAST with an actionable message when the configured lane can't serve:
+    a raw per-document `HTTP Error 404: Not Found` for every row is how a
+    missing default model surfaced before (the model the client points at does
+    not exist on the Ollama host). Probe once and say what to do about it."""
     if os.environ.get("HALO_HACKER_HOSTED") == "1":
         return OpenRouterClient()
-    return OllamaClient()
+    client = OllamaClient()
+    return client
+
+
+def _client_or_error():
+    """Build the local client and preflight it; return (client, None) or
+    (None, error-dict). A config-level failure (host down, model absent) must
+    refuse the WHOLE call once, up front — not trickle a per-document error for
+    every row of a batch, which reads as N unrelated failures instead of one
+    named, fixable cause."""
+    from ingest.model_client import ModelError
+
+    if os.environ.get("HALO_HACKER_HOSTED") == "1":
+        try:
+            return OpenRouterClient(), None
+        except ModelError as e:
+            return None, {"ok": False, "error": str(e)}
+    client = OllamaClient()
+    try:
+        _preflight_ollama(client)
+    except ModelError as e:
+        return None, {"ok": False, "error": str(e)}
+    return client, None
+
+
+def _preflight_ollama(client: "OllamaClient") -> None:
+    """One cheap call that turns a missing-model 404 into a named, fixable error."""
+    import json
+    import urllib.error
+    import urllib.request
+
+    from ingest.model_client import ModelError
+
+    try:
+        with urllib.request.urlopen(f"{client.host}/api/tags", timeout=5) as r:
+            tags = {m.get("name") for m in json.loads(r.read()).get("models", [])}
+    except Exception as e:
+        raise ModelError(
+            f"Ollama unreachable at {client.host} ({e}) — start Ollama or set "
+            f"HALO_HACKER_OLLAMA to a reachable host"
+        ) from e
+    if client.model not in tags:
+        raise ModelError(
+            f"model {client.model!r} is not on {client.host} — available: "
+            f"{sorted(tags) or 'none'}. Pull it (`ollama pull {client.model}`) "
+            f"or set HALO_HACKER_MODEL to one of the available names."
+        )
 
 
 def _vault_root() -> str:
@@ -60,9 +111,12 @@ def ingest_notes(root: str, dry_run: bool = False) -> dict:
     store = _store()
     if isinstance(store, dict):
         return store
+    client, err = _client_or_error()
+    if err is not None:
+        return err
     report = pipeline.run(docs, store,
-                          lambda d: pipeline.model_classify(_client(), d),
-                          lambda d: pipeline.model_distill(_client(), d),
+                          lambda d: pipeline.model_classify(client, d),
+                          lambda d: pipeline.model_distill(client, d),
                           dry_run=dry_run)
     report["skipped_unreadable"] = [{"path": p, "reason": r} for p, r in skipped]
     report["ok"] = True
@@ -75,10 +129,13 @@ def ingest_pdf(path: str) -> dict:
     store = _store()
     if isinstance(store, dict):
         return store
+    client, err = _client_or_error()
+    if err is not None:
+        return err
     doc = adapters.read_pdf(path)
     report = pipeline.run([doc], store,
-                          lambda d: pipeline.model_classify(_client(), d),
-                          lambda d: pipeline.model_distill(_client(), d))
+                          lambda d: pipeline.model_classify(client, d),
+                          lambda d: pipeline.model_distill(client, d))
     report["ok"] = True
     return report
 
@@ -89,10 +146,13 @@ def ingest_github(url: str) -> dict:
     store = _store()
     if isinstance(store, dict):
         return store
+    client, err = _client_or_error()
+    if err is not None:
+        return err
     doc = adapters.fetch_github(url)
     report = pipeline.run([doc], store,
-                          lambda d: pipeline.model_classify(_client(), d),
-                          lambda d: pipeline.model_distill(_client(), d))
+                          lambda d: pipeline.model_classify(client, d),
+                          lambda d: pipeline.model_distill(client, d))
     report["ok"] = True
     return report
 
@@ -102,10 +162,13 @@ def ingest_youtube(url: str) -> dict:
     store = _store()
     if isinstance(store, dict):
         return store
+    client, err = _client_or_error()
+    if err is not None:
+        return err
     doc = adapters.fetch_youtube(url)
     report = pipeline.run([doc], store,
-                          lambda d: pipeline.model_classify(_client(), d),
-                          lambda d: pipeline.model_distill(_client(), d))
+                          lambda d: pipeline.model_classify(client, d),
+                          lambda d: pipeline.model_distill(client, d))
     report["ok"] = True
     return report
 

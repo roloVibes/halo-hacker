@@ -213,12 +213,14 @@ def kev_check(cve_ids: list[str]) -> dict:
                         })
                         break
         
-        # Return all IDs with their status
+        # Return all IDs with their status. `found` only holds hits; look each
+        # requested id up in it — a generator's loop variable is not visible
+        # outside the any(...) scope, so never reference it directly.
+        by_id = {item["cve_id"]: item for item in found}
         results = []
         for cve_id in cve_ids:
-            is_kev = any(found_item['cve_id'] == cve_id for found_item in found)
-            if is_kev:
-                results.append(found_item)  # Add the found item details
+            if cve_id in by_id:
+                results.append(by_id[cve_id])
             else:
                 results.append({
                     "cve_id": cve_id,

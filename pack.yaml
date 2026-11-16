@@ -3,7 +3,7 @@
 # here is checked at install: `halo pack test .` runs every check.
 id: halo-hacker
 name: Halo Hacker
-version: 1.0.6
+version: 1.0.7
 description: >-
   Authorized security assessment capability pack: compose your own testing
   team from 30+ single-responsibility methodology agents, live proxy traffic

@@ -31,13 +31,24 @@ def test_cve_lookup_offline():
         assert result["error"] == "network"
 
 
-def test_kev_check_offline():
+def test_kev_check_offline(monkeypatch, tmp_path):
     """Test KEV check with mocked responses."""
-    # Mock the urllib request to simulate network failure
+    # Isolate module-level KEV cache state and the on-disk cache: a prior test
+    # (or a real run) may have populated either, and a warm cache would make a
+    # "network failure" silently succeed.
+    # Patch the module object `kev_check` was bound from (the importlib copy at
+    # the top of this file, registered as "hh_cve_server"), NOT a fresh
+    # `import cve_server` -- the sys.path insert makes that a distinct module
+    # object and the patch would miss.
+    # `kev_check` was bound from the importlib-loaded module at the top of this
+    # file; its __globals__ is that module's namespace, so patch it there.
+    g = kev_check.__globals__
+    monkeypatch.setitem(g, "_KEV_DATA", None)
+    monkeypatch.setitem(g, "_KEV_CACHE_TIME", None)
+    monkeypatch.setitem(g, "_get_cache_dir", lambda: str(tmp_path))
+
     with patch('urllib.request.urlopen') as mock_urlopen:
-        # Test case 1: Network error
         mock_urlopen.side_effect = Exception("Network error")
-        
         result = kev_check(["CVE-2023-12345"])
         assert not result["ok"]
         assert result["error"] == "network"
@@ -122,14 +133,40 @@ def test_tool_descriptions():
 
 
 if __name__ == "__main__":
+    # Only the no-fixture tests run here: `halo pack test` execs this block
+    # bare, so anything taking monkeypatch/tmp_path (the KEV regression pair)
+    # is pytest-only.
     test_cve_lookup_offline()
-    test_kev_check_offline()
     test_epss_score_offline()
     test_jsonrpc_initialize()
     test_jsonrpc_tools_list()
     test_jsonrpc_tools_call()
     test_tool_descriptions()
     print("All tests passed!")
+
+def test_kev_check_marks_known_and_unknown(monkeypatch, tmp_path):
+    """Regression: kev_check must return per-CVE verdicts, never NameError-as-network.
+
+    The pre-fix version referenced the any(...) generator's loop variable
+    (`found_item`) outside its scope; every online call raised NameError and the
+    blanket except masked it as {"ok": false, "error": "network"} -- a 100%
+    silent failure that the offline-only tests could not see.
+    """
+    fake_catalog = {
+        "vulnerabilities": [
+            {"cveID": "CVE-2021-44228", "dateAdded": "2021-12-10",
+             "requiredAction": "Apply updates", "rationalForExploitation": ""},
+        ]
+    }
+    monkeypatch.setitem(kev_check.__globals__, "_fetch_kev", lambda: fake_catalog)
+
+    out = kev_check(["CVE-2021-44228", "CVE-1900-0001"])
+    assert out["ok"], f"kev_check must succeed online, got {out}"
+    by_id = {r["cve_id"]: r for r in out["results"]}
+    assert by_id["CVE-2021-44228"]["known_exploited"] is True
+    assert by_id["CVE-2021-44228"]["date_added"] == "2021-12-10"
+    assert by_id["CVE-1900-0001"]["known_exploited"] is False
+
 
 def test_nvd_pacer_enforces_unauthenticated_limit(monkeypatch):
     """6 unauthenticated NVD calls inside 30s must sleep; with a key, never."""
