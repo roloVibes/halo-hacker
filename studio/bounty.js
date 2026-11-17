@@ -1,10 +1,13 @@
-// Bug Bounty — scannable HackerOne Studio bundle panel.
-// Layout: sticky header; large stats + segmented report-state bar; dismissible
-// pending-event strip; compact report-intent card grid; reports grouped by
-// collapsible program cards with on-demand activity timelines.
+// Bug Bounty — merged HackerOne Studio bundle panel.
+// Tab structure: one Studio panel titled "Bug Bounty" with in-panel tabs
+// [ Overview | Reports | Intents | Programs ]. The tab buttons only switch pane
+// visibility; the four pane roots stay mounted so Studio does not create extra pack
+// tabs. Overview contains bounty stats/state/attention, Reports contains grouped
+// report timelines, Intents contains the submission queue, and Programs contains
+// the former bounty-programs browser.
 // CSP/data rules: DOM nodes only, untrusted strings via textContent, CSSOM via
 // css(), data from /api/pack/halo-hacker/data/ with the Studio Bearer token,
-// 404 data files treated as empty, poll every 30s plus pack-event SSE.
+// 404 data files treated as empty, one 30s poll plus one pack-event SSE listener.
 
 function h(tag, props, ...children) {
     const el = document.createElement(tag);
@@ -20,12 +23,21 @@ function css(el, styleObj) { Object.assign(el.style, styleObj); }
 
 const DATA_ROOT = "/api/pack/halo-hacker/data/";
 const DISMISS_KEY = "halo-hacker-bounty-pending-dismissed";
+const PROGRAMS_PATH = "h1/programs.json";
+const TAB_DEFS = [
+    ["overview", "Overview"],
+    ["reports", "Reports"],
+    ["intents", "Intents"],
+    ["programs", "Programs"]
+];
 const STATE_COLORS = {
     new: "#8b949e", triaged: "#58a6ff", "needs-more-info": "#d29922",
     resolved: "#3fb950", duplicate: "#6e7681", informative: "#6e7681",
     "not-applicable": "#6e7681", spam: "#f85149", draft: "#8b949e",
     pending: "#d29922", running: "#58a6ff", failed: "#f85149",
-    ready_to_submit: "#3fb950", submitted: "#a371f7"
+    ready_to_submit: "#3fb950", submitted: "#a371f7", open: "#3fb950",
+    closed: "#6e7681", paused: "#d29922", enabled: "#3fb950",
+    disabled: "#6e7681", public: "#58a6ff", private: "#a371f7"
 };
 const SEVERITY_COLORS = { critical: "#f85149", high: "#db6d28", medium: "#d29922", low: "#58a6ff", none: "#6e7681", unknown: "#6e7681" };
 
@@ -47,9 +59,10 @@ function stripMd(value) {
     s = s.replace(/```[a-zA-Z0-9_-]*\n?/g, " ").replace(/```/g, " ");
     s = s.replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
     s = s.replace(/^\s{0,3}#{1,6}\s*/gm, "").replace(/^\s{0,3}>\s?/gm, "");
+    s = s.replace(/^\s{0,3}[-*+]\s+/gm, "").replace(/^\s{0,3}\d+[.)]\s+/gm, "");
     s = s.replace(/^\s*[-*_]{3,}\s*$/gm, " ");
     s = s.replace(/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/gm, " ");
-    s = s.replace(/[`*_~]/g, "").replace(/\s*\|\s*/g, " | ").replace(/\s+/g, " ").trim();
+    s = s.replace(/[\\#*_`~]/g, "").replace(/\s*\|\s*/g, " | ").replace(/\s+/g, " ").trim();
     return s;
 }
 
@@ -58,10 +71,15 @@ function truncateText(value, max) {
     return s.length <= max ? s : s.slice(0, Math.max(0, max - 1)).trimEnd() + "…";
 }
 
-function formatMoney(value) {
+function formatMoney(value, wholeDollars) {
     const n = Number(value || 0);
-    try { return n.toLocaleString("en-US", { style: "currency", currency: "USD" }); }
-    catch (_) { return "$" + n.toFixed(2); }
+    try {
+        const options = { style: "currency", currency: "USD" };
+        if (wholeDollars) options.maximumFractionDigits = 0;
+        return n.toLocaleString("en-US", options);
+    } catch (_) {
+        return "$" + (wholeDollars ? Math.round(n).toLocaleString("en-US") : n.toFixed(2));
+    }
 }
 
 function formatDate(value) {
@@ -87,18 +105,37 @@ function countBy(items, field) {
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 }
 
+function asNumber(value) {
+    const n = Number(value || 0);
+    return Number.isFinite(n) ? n : 0;
+}
+
 function stateColor(state) { return STATE_COLORS[state] || "#6e7681"; }
 function severityColor(sev) { return SEVERITY_COLORS[String(sev || "unknown").toLowerCase()] || "#6e7681"; }
+function programKey(program) { return String(program.handle || program.name || "unknown"); }
+function programName(program) { return String(program.name || program.handle || "Unnamed program"); }
+function programHandle(program) { return String(program.handle || program.name || "unknown"); }
+function isMyProgram(program) { return program.last_invitation_accepted_at_for_user != null || asNumber(program.number_of_reports_for_user) > 0; }
+function sortByName(a, b) { return programName(a).localeCompare(programName(b)); }
+function sortByEarnedThenName(a, b) {
+    const earned = asNumber(b.bounty_earned_for_user) - asNumber(a.bounty_earned_for_user);
+    return earned || sortByName(a, b);
+}
+function matchesQuery(program, query) {
+    if (!query) return true;
+    const haystack = [program.handle, program.name].map(v => String(v || "").toLowerCase()).join(" ");
+    return haystack.includes(query);
+}
 
 function button(text) {
-    const btn = h("button", null, text);
-    css(btn, { background: "#21262d", border: "1px solid #30363d", color: "#e6edf3", borderRadius: "6px", padding: "5px 10px", cursor: "pointer", fontSize: "12px", lineHeight: "1.2" });
+    const btn = h("button", { type: "button" }, text);
+    css(btn, { background: "#21262d", border: "1px solid #30363d", color: "#e6edf3", borderRadius: "6px", padding: "5px 10px", cursor: "pointer", fontSize: "12px", lineHeight: "1.2", fontWeight: "600" });
     return btn;
 }
 
 function badge(text, color) {
     const wrap = h("span", null);
-    css(wrap, { display: "inline-flex", alignItems: "center", gap: "6px", border: "1px solid #30363d", borderRadius: "999px", padding: "2px 8px", whiteSpace: "nowrap", fontSize: "12px", color: "#e6edf3", background: "#161b22", minWidth: "0" });
+    css(wrap, { display: "inline-flex", alignItems: "center", gap: "6px", border: "1px solid #30363d", borderRadius: "999px", padding: "2px 8px", whiteSpace: "nowrap", fontSize: "12px", color: "#e6edf3", background: "#161b22", minWidth: "0", lineHeight: "1.5" });
     const dot = h("span", null);
     css(dot, { width: "8px", height: "8px", borderRadius: "999px", background: color || "#6e7681", display: "inline-block", flex: "0 0 auto" });
     const label = h("span", null, text || "unknown");
@@ -113,9 +150,15 @@ function card() {
     return div;
 }
 
+function panel() {
+    const box = h("section", null);
+    css(box, { background: "#161b22", border: "1px solid #30363d", borderRadius: "10px", padding: "14px", marginBottom: "14px" });
+    return box;
+}
+
 function sectionTitle(text) {
     const title = h("h2", null, text);
-    css(title, { margin: "0 0 10px 0", fontSize: "15px", color: "#e6edf3" });
+    css(title, { margin: "0 0 10px 0", fontSize: "15px", lineHeight: "1.4", color: "#e6edf3" });
     return title;
 }
 
@@ -135,6 +178,18 @@ function small(text) {
     return span;
 }
 
+function muted(text) {
+    const span = h("span", null, text);
+    css(span, { color: "#8b949e" });
+    return span;
+}
+
+function mono(text) {
+    const span = h("span", null, text);
+    css(span, { color: "#8b949e", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: "12px" });
+    return span;
+}
+
 function retestChecklist(report) {
     return [
         `Retest checklist for HackerOne report #${report.id || ""}`,
@@ -151,9 +206,11 @@ function retestChecklist(report) {
 
 export function mount(el, api) {
     const state = {
+        activeTab: "overview",
         reports: [], details: new Map(), earnings: { balance: 0, total_earned: 0, earnings: [], payouts: [] },
-        intents: [], syncState: null, pendingEvents: [], collapsedPrograms: new Set(),
-        expandedReports: new Set(), expandedIntents: new Set(), expandedTimeline: new Set(),
+        intents: [], syncState: null, pendingEvents: [], programs: [], programsGenerated: null,
+        collapsedPrograms: new Set(), expandedReports: new Set(), expandedIntents: new Set(), expandedTimeline: new Set(),
+        expandedPrograms: new Set(), expandedTexts: new Set(), showAll: false, programFilter: "",
         loadingDetails: new Set(), lastJson: "", loading: true, error: "", timer: null, eventSource: null
     };
 
@@ -166,7 +223,7 @@ export function mount(el, api) {
     root.appendChild(header);
 
     const headerLeft = h("div", null);
-    css(headerLeft, { display: "flex", flexDirection: "column", gap: "2px" });
+    css(headerLeft, { display: "flex", flexDirection: "column", gap: "2px", minWidth: "0" });
     const title = h("div", null, "Bug Bounty");
     css(title, { fontWeight: "700", fontSize: "17px" });
     const lastSync = h("div", null, "Last sync: loading…");
@@ -175,30 +232,61 @@ export function mount(el, api) {
     const refreshBtn = button("Refresh");
     header.append(headerLeft, refreshBtn);
 
+    const shell = h("div", null);
+    css(shell, { flex: "1", minHeight: "0", display: "flex", flexDirection: "column", overflow: "hidden" });
+    root.appendChild(shell);
+
+    const tabBar = h("div", { role: "tablist", "aria-label": "Bug Bounty sections" });
+    css(tabBar, { display: "flex", gap: "8px", overflowX: "auto", whiteSpace: "nowrap", borderBottom: "1px solid #30363d", padding: "8px 16px 0 16px", background: "#0d1117", flex: "0 0 auto" });
+    shell.appendChild(tabBar);
+
     const content = h("div", null);
-    css(content, { flex: "1", overflow: "auto", padding: "16px" });
-    root.appendChild(content);
+    css(content, { flex: "1", minHeight: "0", overflow: "auto", padding: "16px" });
+    shell.appendChild(content);
+
+    const tabButtons = new Map();
+    const panes = new Map();
+    for (const [key, label] of TAB_DEFS) {
+        const tab = h("button", { type: "button", role: "tab", "aria-controls": `bounty-pane-${key}`, id: `bounty-tab-${key}` }, label);
+        css(tab, { flex: "0 0 auto", background: "transparent", border: "0", borderBottom: "2px solid transparent", color: "#8b949e", cursor: "pointer", padding: "8px 2px 10px 2px", fontSize: "13px", fontWeight: "700" });
+        tab.addEventListener("click", () => {
+            if (state.activeTab === key) return;
+            state.activeTab = key;
+            updateTabVisibility();
+        });
+        tabBar.appendChild(tab);
+        tabButtons.set(key, tab);
+
+        const pane = h("div", { role: "tabpanel", id: `bounty-pane-${key}`, "aria-labelledby": `bounty-tab-${key}` });
+        css(pane, { minHeight: "0" });
+        content.appendChild(pane);
+        panes.set(key, pane);
+    }
 
     async function load() {
         try {
-            const [reportsText, earningsText, intentsText, syncText, pendingText] = await Promise.all([
+            const [reportsText, earningsText, intentsText, syncText, pendingText, programsText] = await Promise.all([
                 fetchJson(dataUrl("h1/reports.json"), { generated: null, reports: [] }),
                 fetchJson(dataUrl("h1/earnings.json"), { generated: null, balance: 0, earnings: [], payouts: [], total_earned: 0 }),
                 fetchJson(dataUrl("h1/intents.json"), { generated: null, intents: [] }),
                 fetchJson(dataUrl("h1/sync_state.json"), { last_sync: null, counts: {}, previous: null }),
-                fetchJson(dataUrl("h1/pending_events.json"), [])
+                fetchJson(dataUrl("h1/pending_events.json"), []),
+                fetchJson(dataUrl(PROGRAMS_PATH), { generated: null, programs: [] })
             ]);
-            const combined = [reportsText, earningsText, intentsText, syncText, pendingText].join("\n---\n");
-            if (combined === state.lastJson && !state.loading) return;
+            const combined = [reportsText, earningsText, intentsText, syncText, pendingText, programsText].join("\n---\n");
+            if (combined === state.lastJson && !state.loading && !state.error) return;
             state.lastJson = combined;
             const reportsData = JSON.parse(reportsText || "{}");
             const earningsData = JSON.parse(earningsText || "{}");
             const intentsData = JSON.parse(intentsText || "{}");
-            state.reports = reportsData.reports || [];
+            const programsData = JSON.parse(programsText || "{}");
+            state.reports = Array.isArray(reportsData.reports) ? reportsData.reports : [];
             state.earnings = earningsData || state.earnings;
-            state.intents = intentsData.intents || [];
+            state.intents = Array.isArray(intentsData.intents) ? intentsData.intents : [];
             state.syncState = JSON.parse(syncText || "{}");
             state.pendingEvents = JSON.parse(pendingText || "[]") || [];
+            state.programs = Array.isArray(programsData.programs) ? programsData.programs : [];
+            state.programsGenerated = programsData.generated || null;
             state.loading = false;
             state.error = "";
             render();
@@ -224,39 +312,66 @@ export function mount(el, api) {
         }
     }
 
+    function updateTabVisibility() {
+        for (const [key, buttonEl] of tabButtons.entries()) {
+            const active = state.activeTab === key;
+            buttonEl.setAttribute("aria-selected", active ? "true" : "false");
+            buttonEl.setAttribute("tabindex", active ? "0" : "-1");
+            css(buttonEl, { color: active ? "#e6edf3" : "#8b949e", borderBottomColor: active ? "#58a6ff" : "transparent" });
+        }
+        for (const [key, pane] of panes.entries()) {
+            const active = state.activeTab === key;
+            pane.hidden = !active;
+            css(pane, { display: active ? "block" : "none" });
+        }
+    }
+
     function render() {
         updateHeader();
-        content.replaceChildren();
+        for (const pane of panes.values()) pane.replaceChildren();
         if (state.loading) {
-            const div = h("div", null, "Loading bounty data…");
-            css(div, { color: "#8b949e", padding: "32px", textAlign: "center" });
-            content.appendChild(div);
+            for (const pane of panes.values()) {
+                const div = h("div", null, "Loading bounty data…");
+                css(div, { color: "#8b949e", padding: "32px", textAlign: "center" });
+                pane.appendChild(div);
+            }
+            updateTabVisibility();
             return;
         }
-        if (state.error) renderError();
-        renderStats();
-        renderAttention();
-        renderIntents();
-        renderReports();
-        renderFooter();
+        if (state.error) renderError(panes.get("overview"));
+        renderOverview(panes.get("overview"));
+        renderReports(panes.get("reports"));
+        renderIntents(panes.get("intents"));
+        renderPrograms(panes.get("programs"));
+        renderFooter(panes.get("overview"), "Polling every 30s; live updates via Studio pack events.");
+        renderFooter(panes.get("reports"), "Polling every 30s; live updates via Studio pack events.");
+        renderFooter(panes.get("intents"), "Polling every 30s; live updates via Studio pack events.");
+        renderFooter(panes.get("programs"), `Generated: ${state.programsGenerated || "never"} · data: ${PROGRAMS_PATH} · run a sync to refresh`);
+        updateTabVisibility();
     }
 
     function updateHeader() {
         const last = state.syncState && state.syncState.last_sync ? formatDate(state.syncState.last_sync) : "never";
-        lastSync.textContent = `Last sync: ${last}`;
+        const programCount = state.programs.length;
+        lastSync.textContent = `Last sync: ${last} · ${programCount} programs synced`;
     }
 
-    function renderError() {
+    function renderError(parent) {
         const div = card();
         css(div, { borderColor: "#f85149", color: "#f85149" });
         div.append("Error loading bounty data: " + state.error + " ");
         const retry = button("Retry");
         retry.addEventListener("click", load);
         div.appendChild(retry);
-        content.appendChild(div);
+        parent.appendChild(div);
     }
 
-    function renderStats() {
+    function renderOverview(parent) {
+        renderStats(parent);
+        renderAttention(parent);
+    }
+
+    function renderStats(parent) {
         const wrap = card();
         css(wrap, { padding: "14px" });
         const grid = h("div", null);
@@ -266,7 +381,7 @@ export function mount(el, api) {
         grid.appendChild(statCard("Reports", String(state.reports.length)));
         grid.appendChild(statCard("Ready intents", String(state.intents.filter(i => i && i.state === "ready_to_submit").length)));
         wrap.append(grid, renderStateSummary());
-        content.appendChild(wrap);
+        parent.appendChild(wrap);
     }
 
     function statCard(label, value) {
@@ -302,7 +417,7 @@ export function mount(el, api) {
         return box;
     }
 
-    function renderAttention() {
+    function renderAttention(parent) {
         const key = JSON.stringify(state.pendingEvents || []);
         if (!state.pendingEvents.length || sessionStorage.getItem(DISMISS_KEY) === key) return;
         const wrap = card();
@@ -319,22 +434,22 @@ export function mount(el, api) {
             row.textContent = `Report #${ev.report_id || "?"} (${ev.program_handle || "unknown"}): ${ev.kind || "change"} ${ev.from || "—"} → ${ev.to || "—"}`;
             wrap.appendChild(row);
         }
-        content.appendChild(wrap);
+        parent.appendChild(wrap);
     }
 
-    function renderIntents() {
+    function renderIntents(parent) {
         const wrap = card();
         wrap.appendChild(sectionTitle("Report intents queue"));
         if (!state.intents.length) {
             wrap.appendChild(empty("No report intents yet — run a sync or create an intent to start the submission queue."));
-            content.appendChild(wrap);
+            parent.appendChild(wrap);
             return;
         }
         const grid = h("div", null);
         css(grid, { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "12px" });
         state.intents.forEach((intent, index) => grid.appendChild(renderIntentCard(intent, index)));
         wrap.appendChild(grid);
-        content.appendChild(wrap);
+        parent.appendChild(wrap);
     }
 
     function renderIntentCard(intent, index) {
@@ -390,12 +505,12 @@ export function mount(el, api) {
         render();
     }
 
-    function renderReports() {
+    function renderReports(parent) {
         const wrap = h("div", null);
         wrap.appendChild(sectionTitle("Reports grouped by program"));
         if (!state.reports.length) {
             wrap.appendChild(empty("No reports yet — run /hh-bounty sync, then refresh this panel."));
-            content.appendChild(wrap);
+            parent.appendChild(wrap);
             return;
         }
         const groups = new Map();
@@ -407,7 +522,7 @@ export function mount(el, api) {
         for (const [program, reports] of Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
             renderProgramGroup(wrap, program, reports);
         }
-        content.appendChild(wrap);
+        parent.appendChild(wrap);
     }
 
     function earnedByProgram(program) {
@@ -430,7 +545,7 @@ export function mount(el, api) {
         const open = !state.collapsedPrograms.has(program);
         const group = card();
         css(group, { padding: "0", overflow: "hidden" });
-        const head = h("button", null);
+        const head = h("button", { type: "button" }, null);
         css(head, { background: "#161b22", border: "0", color: "#e6edf3", cursor: "pointer", padding: "12px", textAlign: "left", width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" });
         const name = h("div", null, `${open ? "▾" : "▸"} ${program}`);
         css(name, { fontWeight: "700", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
@@ -558,11 +673,223 @@ export function mount(el, api) {
         return toggle;
     }
 
-    function renderFooter() {
+    function filteredPrograms() { return state.programs.filter(program => matchesQuery(program, state.programFilter)); }
+    function myPrograms() { return filteredPrograms().filter(isMyProgram).sort(sortByEarnedThenName); }
+    function directoryPrograms() { return filteredPrograms().filter(program => !isMyProgram(program)).sort(sortByName); }
+
+    function renderPrograms(parent) {
+        renderProgramControls(parent);
+        renderMyPrograms(parent);
+        renderAllPrograms(parent);
+    }
+
+    function renderProgramControls(parent) {
+        const controls = panel();
+        css(controls, { display: "grid", gridTemplateColumns: "minmax(220px, 380px) 1fr", gap: "12px", alignItems: "center" });
+        const search = h("input", { type: "search", placeholder: "Filter by handle or name", autocomplete: "off", "aria-label": "Filter programs by handle or name", value: state.programFilter });
+        css(search, { width: "100%", minWidth: "220px", background: "#0d1117", border: "1px solid #30363d", color: "#e6edf3", borderRadius: "6px", padding: "7px 10px", fontSize: "13px", outline: "none" });
+        search.addEventListener("input", () => { state.programFilter = search.value.trim().toLowerCase(); render(); });
+        const total = state.programs.length;
+        const shown = filteredPrograms().length;
+        const meta = h("div", null, state.programFilter ? `${shown} of ${total} shown` : `${total} synced`);
+        css(meta, { color: "#8b949e", fontSize: "12px", textAlign: "right", minWidth: "140px" });
+        controls.append(search, meta);
+        parent.appendChild(controls);
+    }
+
+    function renderMyPrograms(parent) {
+        const mine = myPrograms();
+        const wrap = panel();
+        const top = h("div", null);
+        css(top, { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px", marginBottom: "12px", flexWrap: "wrap" });
+        top.appendChild(sectionTitle(`My programs (${mine.length})`));
+        top.appendChild(muted("accepted invitations or past reports"));
+        wrap.appendChild(top);
+
+        if (!state.programs.length) {
+            wrap.appendChild(empty("No HackerOne programs synced yet — run a sync."));
+        } else if (!mine.length) {
+            wrap.appendChild(empty(state.programFilter ? "No matching my-programs. Try a different handle or name." : "No accepted or previously reported programs in the synced data."));
+        } else {
+            const grid = h("div", null);
+            css(grid, { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "12px" });
+            for (const program of mine) grid.appendChild(programCard(program));
+            wrap.appendChild(grid);
+        }
+        parent.appendChild(wrap);
+    }
+
+    function programCard(program) {
+        const key = programKey(program);
+        const open = state.expandedPrograms.has(key);
+        const cardEl = h("article", null);
+        css(cardEl, { border: "1px solid " + (open ? "#58a6ff" : "#30363d"), borderRadius: "10px", background: open ? "#101923" : "#161b22", padding: "12px", cursor: "pointer", boxShadow: open ? "0 0 0 1px rgba(88,166,255,0.18)" : "none" });
+        cardEl.addEventListener("click", () => {
+            if (state.expandedPrograms.has(key)) state.expandedPrograms.delete(key);
+            else state.expandedPrograms.add(key);
+            render();
+        });
+        cardEl.addEventListener("mouseenter", () => css(cardEl, { borderColor: open ? "#58a6ff" : "#8b949e" }));
+        cardEl.addEventListener("mouseleave", () => css(cardEl, { borderColor: open ? "#58a6ff" : "#30363d" }));
+
+        const head = h("div", null);
+        css(head, { display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "flex-start" });
+        const names = h("div", null);
+        css(names, { minWidth: "0" });
+        const name = h("div", null, programName(program));
+        css(name, { fontWeight: "700", fontSize: "15px", color: "#e6edf3", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
+        names.append(name, mono(programHandle(program)));
+        head.append(names, submissionBadge(program));
+        cardEl.appendChild(head);
+
+        const stats = h("div", null);
+        css(stats, { marginTop: "10px", color: "#8b949e", fontSize: "13px", display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" });
+        stats.append("Reports " + asNumber(program.number_of_reports_for_user), "·", "Valid " + asNumber(program.number_of_valid_reports_for_user), "·");
+        const earned = h("strong", null, "Earned " + formatMoney(program.bounty_earned_for_user, true));
+        css(earned, { color: "#3fb950", fontWeight: "700" });
+        stats.appendChild(earned);
+        cardEl.appendChild(stats);
+
+        const hint = h("div", null, open ? "Click to collapse" : "Click for policy and scope");
+        css(hint, { color: "#8b949e", fontSize: "12px", marginTop: "8px" });
+        cardEl.appendChild(hint);
+        if (open) cardEl.appendChild(programDetail(program));
+        return cardEl;
+    }
+
+    function submissionBadge(program) {
+        const st = String(program.submission_state || "unknown").toLowerCase();
+        return badge(st, STATE_COLORS[st] || "#6e7681");
+    }
+
+    function programDetail(program) {
+        const detail = h("div", null);
+        css(detail, { marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #30363d", cursor: "default" });
+        detail.addEventListener("click", event => event.stopPropagation());
+
+        const chips = h("div", null);
+        css(chips, { display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" });
+        chips.append(infoChip("Weaknesses", String(asNumber(program.weaknesses_count))), infoChip("Offers bounties", program.offers_bounties ? "yes" : "no"), infoChip("State", program.state || "unknown"));
+        detail.appendChild(chips);
+
+        detail.append(blockTitle("Policy"), clampedText({ key: programKey(program) + ":policy", text: stripMd(program.policy) || "No policy text synced.", lines: 4, shortLimit: 520, expandedMaxHeight: "260px" }));
+        const scopeHead = blockTitle("Scope");
+        css(scopeHead, { marginTop: "12px" });
+        detail.appendChild(scopeHead);
+
+        const scopes = Array.isArray(program.scopes) ? program.scopes : [];
+        if (!scopes.length) detail.appendChild(empty("No scope entries synced for this program."));
+        else {
+            const list = h("div", null);
+            css(list, { display: "grid", gap: "8px" });
+            scopes.forEach((scope, index) => list.appendChild(scopeRow(program, scope, index)));
+            detail.appendChild(list);
+        }
+        return detail;
+    }
+
+    function infoChip(label, value) {
+        const chip = h("div", null);
+        css(chip, { display: "inline-flex", alignItems: "center", gap: "6px", border: "1px solid #30363d", borderRadius: "999px", padding: "4px 8px", background: "#0d1117", fontSize: "12px" });
+        const strong = h("strong", null, value);
+        css(strong, { color: "#e6edf3" });
+        chip.append(strong, muted(label));
+        return chip;
+    }
+
+    function blockTitle(text) {
+        const title = h("div", null, text);
+        css(title, { fontWeight: "700", color: "#e6edf3", marginBottom: "6px", fontSize: "13px" });
+        return title;
+    }
+
+    function clampedText(options) {
+        const full = options.text || "";
+        const key = options.key;
+        const expanded = state.expandedTexts.has(key);
+        const limit = options.shortLimit || 240;
+        const needsToggle = full.length > limit;
+        const shown = !expanded && needsToggle ? full.slice(0, limit).trimEnd() + "…" : full;
+        const wrap = h("div", null);
+        css(wrap, { color: "#8b949e", fontSize: "13px" });
+        const body = h("div", null, shown);
+        css(body, { display: expanded ? "block" : "-webkit-box", WebkitLineClamp: expanded ? "unset" : String(options.lines || 2), WebkitBoxOrient: "vertical", overflow: expanded ? "auto" : "hidden", maxHeight: expanded ? (options.expandedMaxHeight || "180px") : "none", whiteSpace: "normal" });
+        wrap.appendChild(body);
+        if (needsToggle) wrap.appendChild(toggleTextButton(key, expanded));
+        return wrap;
+    }
+
+    function toggleTextButton(key, expanded) {
+        const more = h("button", { type: "button" }, expanded ? "Show less" : "Show more");
+        css(more, { marginTop: "6px", padding: "0", background: "transparent", border: "0", color: "#58a6ff", cursor: "pointer", fontSize: "12px", fontWeight: "600" });
+        more.addEventListener("click", event => {
+            event.stopPropagation();
+            if (state.expandedTexts.has(key)) state.expandedTexts.delete(key);
+            else state.expandedTexts.add(key);
+            render();
+        });
+        return more;
+    }
+
+    function scopeRow(program, scope, index) {
+        const row = h("div", null);
+        css(row, { border: "1px solid #30363d", borderRadius: "8px", background: "#0d1117", padding: "9px" });
+        const top = h("div", null);
+        css(top, { display: "grid", gridTemplateColumns: "minmax(150px, 1fr) auto auto", gap: "8px", alignItems: "center" });
+        const ident = h("div", null, String(scope.asset_identifier || "unnamed asset"));
+        css(ident, { fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: "12px", color: "#e6edf3", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
+        top.append(ident, badge(scope.eligible_for_bounty ? "bounty" : "no bounty", scope.eligible_for_bounty ? "#3fb950" : "#6e7681"), badge(scope.max_severity || "severity —", "#58a6ff"));
+        row.appendChild(top);
+
+        const facts = [];
+        if (scope.asset_type) facts.push("Type: " + scope.asset_type);
+        if (scope.eligible_for_submission === false) facts.push("Not eligible for submission");
+        const instruction = stripMd(scope.instruction || scope.instructions || "");
+        const detailText = [facts.join(" · "), instruction].filter(Boolean).join(" · ");
+        if (detailText) {
+            const detail = clampedText({ key: programKey(program) + ":scope:" + index, text: detailText, lines: 2, shortLimit: 190, expandedMaxHeight: "140px" });
+            css(detail, { marginTop: "7px" });
+            row.appendChild(detail);
+        }
+        return row;
+    }
+
+    function renderAllPrograms(parent) {
+        const rest = directoryPrograms();
+        const wrap = panel();
+        const head = h("button", { type: "button" }, `${state.showAll ? "▾" : "▸"} All programs directory (${rest.length})`);
+        css(head, { background: "transparent", border: "0", color: "#e6edf3", cursor: "pointer", fontWeight: "700", fontSize: "15px", padding: "0", textAlign: "left" });
+        head.addEventListener("click", () => { state.showAll = !state.showAll; render(); });
+        wrap.appendChild(head);
+        if (state.showAll) {
+            if (!rest.length) wrap.appendChild(empty(state.programFilter ? "No matching directory programs." : "No additional programs outside My programs."));
+            else {
+                const list = h("div", null);
+                css(list, { marginTop: "10px", maxHeight: "400px", overflowY: "auto", borderTop: "1px solid #30363d" });
+                for (const program of rest) list.appendChild(directoryRow(program));
+                wrap.appendChild(list);
+            }
+        }
+        parent.appendChild(wrap);
+    }
+
+    function directoryRow(program) {
+        const row = h("div", null);
+        css(row, { display: "grid", gridTemplateColumns: "minmax(160px, 1fr) auto", gap: "10px", alignItems: "center", padding: "8px 4px", borderBottom: "1px solid #30363d" });
+        const names = h("div", null);
+        css(names, { minWidth: "0" });
+        const name = h("div", null, programName(program));
+        css(name, { color: "#e6edf3", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
+        names.append(name, mono(programHandle(program)));
+        row.append(names, submissionBadge(program));
+        return row;
+    }
+
+    function renderFooter(parent, text) {
         const footer = h("div", null);
         css(footer, { color: "#8b949e", fontSize: "12px", padding: "2px 0 12px 0" });
-        footer.textContent = "Polling every 30s; live updates via Studio pack events.";
-        content.appendChild(footer);
+        footer.textContent = text;
+        parent.appendChild(footer);
     }
 
     function startLiveUpdates() {
@@ -582,6 +909,7 @@ export function mount(el, api) {
     }
 
     refreshBtn.addEventListener("click", load);
+    updateTabVisibility();
     load();
     startLiveUpdates();
 

@@ -175,10 +175,22 @@ def test_manifest_declares_the_bundle_panel():
     assert panels["findings-browser"]["kind"] == "bundle"
     assert panels["findings-browser"]["source"] == "studio/findings.js"
     assert (_PACK / "studio" / "findings.js").exists()
-    # the counts panel is a TABLE reading the data folder (markdown cannot)
-    assert panels["findings-counts"]["kind"] == "table"
-    assert panels["findings-counts"]["source"] == "data:findings/counts.json"
+    # the findings browser renders counts and the table in one bundle; the
+    # standalone counts/table/feed panels were merged into it (tab overflow)
     assert "studio-script" in m["permissions"]
+
+
+def test_panel_count_fits_the_tab_bar():
+    """Regression for the tab-overflow fix: one Studio tab per panel, and a
+    browser-width tab bar can hold only so many. Keep the section lean."""
+    m = _manifest()
+    section = m["contributes"]["studio"]["sections"][0]
+    panels = section["panels"]
+    assert len(panels) <= 9, f"{len(panels)} panels overflow the Studio tab bar"
+    # the findings counts/table/feed and the separate programs panel were merged
+    ids = {p["id"] for p in panels}
+    for removed in ("findings-counts", "findings-table", "findings-feed", "bounty-programs"):
+        assert removed not in ids, f"{removed} should be merged, not its own tab"
 
 
 def test_manifest_palette_routes_resolve():

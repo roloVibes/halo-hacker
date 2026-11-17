@@ -14,7 +14,9 @@ from pathlib import Path
 import pytest
 
 _PACK = Path(__file__).resolve().parent.parent
-_PANELS = [_PACK / "studio" / "bounty.js", _PACK / "studio" / "bounty-programs.js"]
+# The bounty programs view is merged into bounty.js as a tab (tab-overflow fix);
+# only the single tabbed bundle ships.
+_PANELS = [_PACK / "studio" / "bounty.js"]
 
 
 def test_panels_exist():

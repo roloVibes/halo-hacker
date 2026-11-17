@@ -4,6 +4,14 @@ Each release of the pack, newest first: the version (pack.yaml's `version`), the
 who runs it. A change they must act on also gets a `migrations` entry in pack.yaml, which `halo pack update` prints
 before it replaces anything.
 
+## 1.1.1 - 2026-11-17
+
+**Studio tab-bar overflow fix: 12 tabs -> 8.** The pack contributed one Studio tab per panel; with the two new
+bounty panels the section bar ran off the browser. Merged the three redundant findings panels (Counts, Findings
+table, Lifecycle — all already inside the findings browser) into it, and merged the two bug-bounty panels into one
+tabbed "Bug Bounty" panel (Overview / Reports / Intents / Programs) with a horizontally-scrolling in-panel tab bar.
+No feature lost; a regression test caps the panel count so the tab bar can't silently overflow again.
+
 ## 1.1.0 - 2026-11-17
 
 **Bug bounty operations: a HackerOne dashboard, program browser, and AI-reviewed submission pipeline.**
