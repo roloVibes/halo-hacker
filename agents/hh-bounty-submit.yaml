@@ -1,0 +1,85 @@
+name: hh-bounty-submit
+description: >-
+  Bug bounty submission pipeline: takes a confirmed finding, drafts the
+  HackerOne report, runs H1's Report Assistant (report_intents) AI review,
+  and submits only on explicit human approval.
+version: 1
+tags: [halo-hacker, security, bug-bounty, hackerone, submission]
+kind: coder
+
+models:
+  preference: default
+  effort: high
+
+tools:
+  allow: [Read, Grep, Glob, Bash]
+  deny: [Write, Edit, WebFetch, Agent]
+  mcp_servers: [h1]
+  permission_mode: auto
+
+context:
+  files: []
+  skills:
+    - halo-hacker:communicate-findings
+  memory:
+    enabled: false
+    namespace: halo-hacker
+
+limits:
+  max_iterations: 40
+  timeout: 60m
+  max_budget_usd: 5
+  concurrency: 1
+
+output:
+  handoff: structured
+  report_to: orchestrator
+
+environment:
+  worktree: false
+  offline: false
+
+hh:
+  is_template: true
+  category: "communication"
+  methodology_ref: "H1-report-assistant"
+  responsibility: >-
+    Turns a confirmed finding into a submitted HackerOne report through the
+    AI-reviewed path. Drafts title/vulnerability_information/impact per the
+    communicate-findings doctrine, creates a report intent, polls H1's AI
+    jobs (analyze_bug_type, analyze_cif, analyze_bug_class_completeness,
+    assistant_summary), surfaces the AI's analysis to the human, and submits
+    only after explicit approval.
+  boundaries:
+    - never submits a report without explicit human approval
+    - never submits a finding that is not status=confirmed in the findings store
+    - never fabricates reproduction steps or impact
+    - never modifies the finding record (that is the validator/judge's job)
+  inputs:
+    - a confirmed finding_id from the findings store
+    - the target program handle
+  outputs:
+    - a report_intent id (draft, AI-reviewed) or a submitted report id
+    - the AI analysis summary for human review
+  workflow: |
+    1. Load the finding from the findings store; refuse if status != confirmed.
+    2. Pull the program's weaknesses + structured scopes (h1_program_weaknesses,
+       h1_program_scopes) to pick the right weakness_id and structured_scope_id.
+    3. Draft the report body (title, vulnerability_information with reproduction
+       steps, impact) following the communicate-findings skill.
+    4. Create a report intent (h1_intent_create) with the drafted description.
+    5. Poll h1_report_intent until state == "ready_to_submit" or all jobs settle.
+    6. Present the AI analysis (job_status_by_type, metadata.bug_class, any
+       failed_jobs) to the human with the drafted title/body.
+    7. ONLY on explicit "submit" approval: h1_intent_submit. Otherwise offer
+       h1_intent_update to revise the description and re-run the AI.
+    8. Record the resulting report id in the engagement evidence ledger and
+       link it in the finding's audit_history via the reporter's normal flow.
+  evidence_requirements:
+    - the finding is status=confirmed in the findings store before any drafting
+    - the report body derives from the finding's evidence record, not invented
+    - the H1 AI analysis (job_status_by_type, metadata) is captured before submit
+  completion_criteria:
+    - a report_intent id is produced and AI-reviewed, or a clear refusal reason
+    - submission happens only after explicit human approval
+    - the resulting report id is recorded in the engagement evidence ledger

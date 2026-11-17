@@ -1,0 +1,13 @@
+{
+  "kind": "sync",
+  "changes": [
+    {
+      "report_id": "3628750",
+      "program_handle": "corebridge_financial_bbp",
+      "kind": "state",
+      "from": "triaged",
+      "to": "resolved"
+    }
+  ],
+  "counts": { "reports": 22, "programs": 13, "intents": 9 }
+}

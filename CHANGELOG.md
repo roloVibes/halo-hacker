@@ -4,6 +4,29 @@ Each release of the pack, newest first: the version (pack.yaml's `version`), the
 who runs it. A change they must act on also gets a `migrations` entry in pack.yaml, which `halo pack update` prints
 before it replaces anything.
 
+## 1.1.0 - 2026-11-17
+
+**Bug bounty operations: a HackerOne dashboard, program browser, and AI-reviewed submission pipeline.**
+
+- **New `h1` MCP server** — wraps the HackerOne Hacker API v1 (18 tools: reports, programs, structured scopes,
+  weaknesses, balance/earnings/payouts, hacktivity, and the full report-intent lifecycle). Stdlib-only, HTTP Basic
+  auth via the `h1_api_user` / `h1_api_token` config keys (or `H1_API_USER` / `H1_API_TOKEN` env), client-side rate
+  pacer with one 429 retry, and the H1 quirk documented: nonexistent paths return 401, so the server never treats a
+  bare 401 as proof of bad credentials.
+- **`tools/h1_sync.py`** — normalizes captured API JSON into the pack data dir (`h1/reports.json`, `programs.json`,
+  `earnings.json`, `intents.json`, per-report `report_details/<id>.json` with the full activity timeline). Detects
+  report state transitions and new program activity between syncs and emits an `hh.h1.update` event (or queues to
+  `h1/pending_events.json` when the harness isn't importable).
+- **Two new Studio panels.** *Bug bounty* — stats strip (balance, earned, report states), an attention strip for
+  what changed since last sync, the report-intent queue with H1's AI job status, and reports grouped by program with
+  a click-through timeline (comments, bounties) plus a retest checklist on resolved reports. *Bounty programs* —
+  your programs sorted by bounty earned, with scope and weakness viewers, and the public directory.
+- **`hh-bounty-submit` agent + `/halo-hacker:hh-bounty` command** — takes a confirmed finding, drafts the report,
+  runs it through H1's Report Assistant (report_intents) AI pipeline, surfaces the analysis, and submits only on
+  explicit human approval. `sync`, `intents`, `submit`, `retest`, and `status` subcommands.
+- **Verified live against a real account**: 22 reports, $500 earned, 9 report intents, per-program scopes and ROI
+  all render correctly. 21 new tests (server, sync, panel CSP/syntax) plus a jsdom render harness.
+
 ## 1.0.7 - 2026-11-16
 
 **Two live-use bugs found by actually exercising the pack on Halo 3.6.0.0, both fixed and regression-pinned.**

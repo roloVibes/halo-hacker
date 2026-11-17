@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "hh.h1.update event",
+  "description": "A HackerOne sync detected a change in one of your reports (state transition or new program activity). Emitted once per sync with the full change list.",
+  "type": "object",
+  "required": ["kind", "changes"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": { "type": "string", "enum": ["sync"] },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["report_id", "program_handle", "kind", "from", "to"],
+        "properties": {
+          "report_id": { "type": ["string", "integer"] },
+          "program_handle": { "type": "string" },
+          "kind": { "type": "string", "enum": ["state", "activity"] },
+          "from": { "type": ["string", "null"] },
+          "to": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "counts": {
+      "type": "object",
+      "properties": {
+        "reports": { "type": "integer" },
+        "programs": { "type": "integer" },
+        "intents": { "type": "integer" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

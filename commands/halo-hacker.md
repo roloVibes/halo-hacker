@@ -10,6 +10,7 @@ and judging.
 What it brings:
 - command /halo-hacker:hh -- Engage, check status, or disengage the active assessment (scope as data: one state file, fail-closed inside the test window)
 - command /halo-hacker:hh-report -- Generate a leadership email or full report from confirmed findings
+- command /halo-hacker:hh-bounty -- Bug bounty operations: sync HackerOne data, review AI-vetted intents, submit confirmed findings, retest resolved reports
 - command /halo-hacker:projects -- List, create, switch, or archive bug bounty programs (multi-project tracking)
 - command /halo-hacker:communicate -- Turn a confirmed finding into stakeholder-ready communication (SANS reader-model)
 - workflow halo-hacker/hh-web-app-assessment -- recon → discovery → auth → injection → logic → validate → judge

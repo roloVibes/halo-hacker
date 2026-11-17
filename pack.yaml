@@ -3,7 +3,7 @@
 # here is checked at install: `halo pack test .` runs every check.
 id: halo-hacker
 name: Halo Hacker
-version: 1.0.7
+version: 1.1.0
 description: >-
   Authorized security assessment capability pack: compose your own testing
   team from 30+ single-responsibility methodology agents, live proxy traffic
@@ -39,6 +39,7 @@ contributes:
     # Built-in agents (8 monolithic roles, backward-compatible)
     - agents/hh-ai-security-tester.yaml
     - agents/hh-api-tester.yaml
+    - agents/hh-bounty-submit.yaml
     - agents/hh-judge.yaml
     - agents/hh-orchestrator.yaml
     - agents/hh-recon.yaml
@@ -114,6 +115,7 @@ contributes:
     - {name: ingest, description: knowledge ingestion into the provenance-ledger KB (local notes, PDFs, GitHub files, YouTube subtitles)}
     - {name: cve, description: NVD 2.0 lookup with a rate pacer, CISA KEV checks (24 h cached), FIRST EPSS scores}
     - {name: traffic, description: real-time proxy traffic analysis (Caido/Burp) — start/stop watching, fetch recent pairs, get correlation suggestions for agents}
+    - {name: h1, description: HackerOne Hacker API v1 — reports, programs, scopes, earnings, report intents (AI pre-submission review), and report submission}
   services:
     - name: traffic-watch
       description: Watches Caido or Burp proxy traffic for the active engagement
@@ -141,6 +143,9 @@ contributes:
     - kind: hh.alert
       schema: events/hh.alert.json
       description: "an alert requiring human attention (finding, limit, traffic hit, scope edge)"
+    - kind: hh.h1.update
+      schema: events/hh.h1.update.json
+      description: "a HackerOne sync detected report state/activity changes"
   studio:
     sections:
       - id: halo-hacker
@@ -245,6 +250,28 @@ contributes:
               Attack-path graph: findings connected by requires/grants
               capability tokens — demonstrated (solid) vs projected (dashed) —
               plus MITRE ATT&CK/ATLAS technique mapping.
+          - id: bounty-dashboard
+            title: Bug bounty
+            kind: bundle
+            source: studio/bounty.js
+            w: 24
+            h: 140
+            help: >-
+              HackerOne dashboard: balance, earnings, and signal stats; your
+              reports grouped by program with state badges; the report-intent
+              queue with H1's AI review status; click any report for its full
+              comment timeline and bounties; retest resolved reports. Sync via
+              /hh-bounty sync.
+          - id: bounty-programs
+            title: Bounty programs
+            kind: bundle
+            source: studio/bounty-programs.js
+            w: 24
+            h: 120
+            help: >-
+              HackerOne programs browser: your programs with per-program ROI
+              (reports, valid, bounty earned), scope and weaknesses viewers,
+              and the public program directory.
     palette:
       - {id: open-guide, label: How this works (start here), action: "route:halo-hacker/guide"}
       - {id: open-engage, label: Open settings & engagement, action: "route:halo-hacker/engage-form"}
@@ -253,6 +280,8 @@ contributes:
       - {id: open-projects, label: Open projects, action: "route:halo-hacker/projects-view"}
       - {id: open-ingest, label: Open ingest dashboard, action: "route:halo-hacker/ingest-view"}
       - {id: open-attack-paths, label: Open attack paths, action: "route:halo-hacker/attack-paths-graph"}
+      - {id: open-bounty, label: Open bug bounty dashboard, action: "route:halo-hacker/bounty-dashboard"}
+      - {id: open-bounty-programs, label: Open bounty programs, action: "route:halo-hacker/bounty-programs"}
     attention:
       hh.alert.critical-finding:
         label: "Critical finding"
@@ -289,6 +318,7 @@ permissions:
   - mcp:ingest
   - mcp:cve
   - mcp:traffic
+  - mcp:h1
   - bash
   - hooks
   - studio-script
@@ -337,6 +367,12 @@ config:
         type: string
         enum: [hackerone, bugcrowd, intigriti, custom]
         description: "The bug bounty platform for this engagement."
+      h1_api_user:
+        type: string
+        description: "HackerOne API identifier (the label set when creating the token at https://hackerone.com/users/edit?selected_tab=api). Case-sensitive."
+      h1_api_token:
+        type: string
+        description: "HackerOne API token. Never committed; stored in machine-local pack config."
     additionalProperties: false
   defaults:
     vault: ""
@@ -351,6 +387,8 @@ config:
     tester_name: ""
     tester_email: ""
     platform: "custom"
+    h1_api_user: ""
+    h1_api_token: ""
 migrations:
   - from: "0.9.0"
     to: "1.0.0"

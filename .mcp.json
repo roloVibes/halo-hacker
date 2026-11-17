@@ -17,6 +17,13 @@
       "env": {
         "HALO_HACKER_PACK_ID": "halo-hacker"
       }
+    },
+    "h1": {
+      "command": "${halo_python}",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/h1_server.py"],
+      "env": {
+        "HALO_HACKER_PACK_ID": "halo-hacker"
+      }
     }
   }
 }
