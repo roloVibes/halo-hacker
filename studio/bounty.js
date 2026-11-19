@@ -476,12 +476,41 @@ export function mount(el, api) {
         return div;
     }
 
+    // HackerOne's own Hai pipeline job types, humanized. Anything unknown
+    // falls back to a prettified snake_case -> words transform.
+    const H1_JOB_LABELS = {
+        analyze_asset_type: "Asset type analysis",
+        analyze_bug_class_completeness: "Bug-class completeness check",
+        analyze_bug_type: "Bug type classification",
+        analyze_cif: "Customer impact (CIF) analysis",
+        analyze_custom_fields: "Custom field extraction",
+        analyze_vulnerability_presence: "Vulnerability presence check",
+        assistant_response: "Assistant response draft",
+        assistant_summary: "Report summary draft",
+        determine_asset: "Asset detection",
+        revise_intent: "Intent revision"
+    };
+
+    function jobLabel(name) {
+        const key = String(name || "");
+        if (H1_JOB_LABELS[key]) return H1_JOB_LABELS[key];
+        const words = key.replace(/[_-]+/g, " ").trim();
+        return words ? words.charAt(0).toUpperCase() + words.slice(1) : "Unknown check";
+    }
+
     function renderIntentFailures(div, intent) {
         const failed = Array.isArray(intent.failed_jobs) ? intent.failed_jobs : [];
         if (!failed.length) return;
-        const fail = h("div", null, "Failed AI jobs: " + failed.map(stripMd).join(", "));
-        css(fail, { color: "#f85149", fontSize: "12px" });
+        const names = failed.map(jobLabel);
+        const fail = h("div", null,
+            "HackerOne AI review — needs attention: " + names.join(", ") + ".");
+        css(fail, { color: "#d29922", fontSize: "12px", fontWeight: "600" });
         div.appendChild(fail);
+        const why = h("div", null,
+            "These are HackerOne's own pipeline checks on the intent (not halo-hacker jobs). " +
+            "They usually fail on a thin draft or a platform hiccup — edit and re-save the intent on H1 to re-run them.");
+        css(why, { color: "#8b949e", fontSize: "11px" });
+        div.appendChild(why);
     }
 
     function renderIntentFooter(div, intent) {

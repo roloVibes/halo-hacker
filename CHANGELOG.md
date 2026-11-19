@@ -4,6 +4,25 @@ Each release of the pack, newest first: the version (pack.yaml's `version`), the
 who runs it. A change they must act on also gets a `migrations` entry in pack.yaml, which `halo pack update` prints
 before it replaces anything.
 
+## 1.2.0 - 2026-11-18
+
+**Agentic-AI technique library, and the Bug Bounty panel stops crying wolf.**
+
+- **New `resources/payloads/agentic-ai.json`** — a technique-indexed attack library for testing LLM applications and
+  agents: 12 classes (direct override, separator spoofing, system-prompt extraction, encoding smuggling, indirect
+  injection, multi-turn persistence, persona framing, tool-boundary escape, approval-policy manipulation,
+  confirmation reuse, memory poisoning, cross-agent trust), 31 techniques, every payload a canary-templated test
+  with its success signal and OWASP/ATLAS refs. Provenance in `resources/SOURCES-agentic-ai.md` — original prose
+  distilled from public research (OWASP LLM Top 10, MITRE ATLAS, Rehberger, Greshake et al., Zenity Labs, Bargury).
+- **Agents and playbooks wire it in.** `hh-prompt-injection` gains memory poisoning (with a fresh-session verification
+  requirement); `hh-tool-abuse` gains the agentic trust plane: approval-policy manipulation, confirmation reuse,
+  cross-agent trust. `discovery.llm-prompt-injection` 1.1 adds a memory-persistence stage; `discovery.llm-tool-boundaries`
+  1.1 adds an approval-plane stage.
+- **Bug Bounty panel: failed H1 AI checks read as what they are.** Raw Hai job names ("analyze_bug_class_completeness")
+  rendered as red "Failed AI jobs" made HackerOne's own pipeline hiccups look like pack errors. The panel now shows
+  human labels ("Bug-class completeness check"), says plainly these are HackerOne's checks on the intent, and tells
+  you how to re-run them (edit and re-save the intent on H1).
+
 ## 1.1.1 - 2026-11-17
 
 **Studio tab-bar overflow fix: 12 tabs -> 8.** The pack contributed one Studio tab per panel; with the two new

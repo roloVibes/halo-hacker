@@ -65,3 +65,22 @@ def test_panels_node_syntax_check():
             path = fh.name
         r = subprocess.run([node, "--check", path], capture_output=True, text=True)
         assert r.returncode == 0, f"node --check failed for {p.name}:\n{r.stderr}"
+
+
+# HackerOne's Hai pipeline job types the panel must render human-readably.
+_KNOWN_H1_JOBS = [
+    "analyze_asset_type", "analyze_bug_class_completeness", "analyze_bug_type",
+    "analyze_cif", "analyze_custom_fields", "analyze_vulnerability_presence",
+    "assistant_response", "assistant_summary", "determine_asset", "revise_intent",
+]
+
+
+def test_failed_jobs_are_humanized_and_attributed():
+    """Raw Hai job names ('analyze_bug_class_completeness') read as pack bugs.
+    The panel must label them, and must say they are HackerOne's own checks."""
+    js = (_PACK / "studio" / "bounty.js").read_text(encoding="utf-8")
+    assert "H1_JOB_LABELS" in js, "bounty.js: humanized job-label map missing"
+    for job in _KNOWN_H1_JOBS:
+        assert f"{job}:" in js, f"bounty.js: no human label for H1 job {job!r}"
+    assert "Failed AI jobs" not in js, "bounty.js: raw 'Failed AI jobs' copy is back"
+    assert "HackerOne" in js, "bounty.js: failed-job copy must attribute the checks to HackerOne"
