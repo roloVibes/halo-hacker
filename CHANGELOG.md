@@ -4,6 +4,19 @@ Each release of the pack, newest first: the version (pack.yaml's `version`), the
 who runs it. A change they must act on also gets a `migrations` entry in pack.yaml, which `halo pack update` prints
 before it replaces anything.
 
+## 1.3.0 - 2026-11-18
+
+**Telemetry export: the evidence ledger as a portable, third-party-verifiable bundle.**
+
+Programs and competitions increasingly ask for the full record of what the tester (human or agent) DID — timestamped
+actions, session structure, and proof the record was not rewritten after the fact. The engagement evidence ledger
+already is that record; `/halo-hacker:hh-export` (`tools/telemetry_export.py`) now renders it as a bundle:
+`manifest.json` (run id, counts, ledger head hash, chain-verification result, per-file sha256), `actions.jsonl`
+(one row per ledger row with a per-run correlation id), `sessions.jsonl` (contiguous same-actor runs), `summary.md`,
+and `capture-setup.md` (the capture model and the exact recipe for a third party to re-walk the hash chain).
+`--zip` emits a single archive with its sha256. Honesty is structural: the chain is verified at export time and the
+result — problems included — is written into the manifest; a bundle never claims a broken chain is clean.
+
 ## 1.2.0 - 2026-11-18
 
 **Agentic-AI technique library, and the Bug Bounty panel stops crying wolf.**

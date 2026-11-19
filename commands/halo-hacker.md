@@ -13,6 +13,7 @@ What it brings:
 - command /halo-hacker:hh-bounty -- Bug bounty operations: sync HackerOne data, review AI-vetted intents, submit confirmed findings, retest resolved reports
 - command /halo-hacker:projects -- List, create, switch, or archive bug bounty programs (multi-project tracking)
 - command /halo-hacker:communicate -- Turn a confirmed finding into stakeholder-ready communication (SANS reader-model)
+- command /halo-hacker:hh-export -- Export the engagement's evidence ledger as a portable telemetry bundle (actions, sessions, manifest, verification recipe)
 - workflow halo-hacker/hh-web-app-assessment -- recon → discovery → auth → injection → logic → validate → judge
 - workflow halo-hacker/hh-api-security-review -- discovery → auth → API testing → advanced → validate → judge
 - workflow halo-hacker/hh-ai-security-review -- discovery → four AI lanes → validate → judge
