@@ -1,0 +1,377 @@
+# Halo Hacker (halo-hacker): authorized security assessment as a Halo pack.
+# HALO-PACK.md says how to work on it; README.md lists every part. Every value
+# here is checked at install: `halo pack test .` runs every check.
+id: halo-hacker
+name: Halo Hacker
+version: 1.1.1
+description: >-
+  Authorized security assessment capability pack: compose your own testing
+  team from 30+ single-responsibility methodology agents, live proxy traffic
+  analysis (Caido/Burp), multi-project tracking for bug bounty workflows,
+  findings review/judge pipeline, attack-path mapping (MITRE ATT&CK/ATLAS),
+  SANS-trained finding communication, and evidence-driven reporting. Built
+  for Halo 3.6.0.0's Builder — describe what you need, get a working agent.
+author: Pinball Genie LLC (github.com/roloVibes)
+license: All rights reserved — Pinball Genie LLC (see /LICENSE)
+halo_api:
+  min: "1.4"
+  max: "1.9"
+halo:
+  min: "3.5"
+capabilities:
+  - agents
+  - templates
+  - teams
+  - workflows
+  - schemas
+  - policies
+  - playbooks
+  - ingestion
+  - traffic-analysis
+  - findings-review
+  - attack-paths
+  - multi-project
+  - communication
+  - halo-hacker.assessment
+requires: []
+contributes:
+  agents:
+    # Built-in agents (8 monolithic roles, backward-compatible)
+    - agents/hh-ai-security-tester.yaml
+    - agents/hh-api-tester.yaml
+    - agents/hh-bounty-submit.yaml
+    - agents/hh-judge.yaml
+    - agents/hh-orchestrator.yaml
+    - agents/hh-recon.yaml
+    - agents/hh-reporter.yaml
+    - agents/hh-validator.yaml
+    - agents/hh-web-tester.yaml
+    # Methodology agent templates (40 single-responsibility, Builder starting points)
+    # Recon
+    - agents/hh-subdomain-enum.yaml
+    - agents/hh-port-scanner.yaml
+    - agents/hh-tech-fingerprint.yaml
+    - agents/hh-endpoint-discovery.yaml
+    - agents/hh-parameter-harvest.yaml
+    - agents/hh-content-discovery.yaml
+    # Auth/Session
+    - agents/hh-auth-flow-tester.yaml
+    - agents/hh-session-tester.yaml
+    - agents/hh-jwt-tester.yaml
+    - agents/hh-oauth-tester.yaml
+    - agents/hh-credential-tester.yaml
+    # Injection
+    - agents/hh-sqli-tester.yaml
+    - agents/hh-xss-tester.yaml
+    - agents/hh-command-injection.yaml
+    - agents/hh-ssti-tester.yaml
+    - agents/hh-xxe-tester.yaml
+    - agents/hh-deserialization.yaml
+    # Business logic
+    - agents/hh-idor-tester.yaml
+    - agents/hh-access-control.yaml
+    - agents/hh-race-condition.yaml
+    - agents/hh-payment-tester.yaml
+    - agents/hh-workflow-tester.yaml
+    # API
+    - agents/hh-rest-api-tester.yaml
+    - agents/hh-graphql-tester.yaml
+    - agents/hh-rate-limit-tester.yaml
+    - agents/hh-ssrf-tester.yaml
+    - agents/hh-cors-tester.yaml
+    # AI/LLM
+    - agents/hh-prompt-injection.yaml
+    - agents/hh-tool-abuse.yaml
+    - agents/hh-data-exposure.yaml
+    - agents/hh-model-manipulation.yaml
+    # Infrastructure
+    - agents/hh-cloud-config.yaml
+    - agents/hh-cicd-security.yaml
+    - agents/hh-network-tester.yaml
+    # Review pipeline
+    - agents/hh-review-validator.yaml
+    - agents/hh-review-judge.yaml
+    - agents/hh-communicator.yaml
+    - agents/hh-traffic-analyst.yaml
+    # Coordination
+    - agents/hh-manager.yaml
+    - agents/hh-reporter-template.yaml
+  teams:
+    - teams/hh-ai-security-review.yaml
+    - teams/hh-api-security-review.yaml
+    - teams/hh-cloud-config-assessment.yaml
+    - teams/hh-finding-validation-reporting.yaml
+    - teams/hh-web-app-assessment.yaml
+  workflows:
+    - hh-web-app-assessment
+    - hh-api-security-review
+    - hh-ai-security-review
+    - hh-bug-bounty-hunt
+    - hh-pack-dev
+  skills: skills
+  commands: commands
+  hooks: hooks/hooks.json
+  mcp:
+    - {name: ingest, description: knowledge ingestion into the provenance-ledger KB (local notes, PDFs, GitHub files, YouTube subtitles)}
+    - {name: cve, description: NVD 2.0 lookup with a rate pacer, CISA KEV checks (24 h cached), FIRST EPSS scores}
+    - {name: traffic, description: real-time proxy traffic analysis (Caido/Burp) — start/stop watching, fetch recent pairs, get correlation suggestions for agents}
+    - {name: h1, description: HackerOne Hacker API v1 — reports, programs, scopes, earnings, report intents (AI pre-submission review), and report submission}
+  services:
+    - name: traffic-watch
+      description: Watches Caido or Burp proxy traffic for the active engagement
+      run: ["${halo_python}", "${CLAUDE_PLUGIN_ROOT}/mcp/traffic_server.py", "watch"]
+      autostart: false
+      restart: on-failure
+      health: {file: traffic-health.json, max_age_s: 120}
+      log: traffic-watch.log
+  events:
+    - kind: hh.finding
+      schema: events/hh.finding.json
+      description: "one finding lifecycle moment (identified/reviewed/confirmed/terminal)"
+    - kind: hh.project.switch
+      schema: events/hh.project.switch.json
+      description: "the active project or bug-bounty program changed"
+    - kind: hh.engagement.configured
+      schema: events/hh.engagement.configured.json
+      description: "engagement scope, targets, or rules were updated"
+    - kind: hh.agent.activity
+      schema: events/hh.agent.activity.json
+      description: "an agent started, finished, or produced a finding"
+    - kind: hh.ingest.item
+      schema: events/hh.ingest.item.json
+      description: "an item was ingested into the knowledge base"
+    - kind: hh.alert
+      schema: events/hh.alert.json
+      description: "an alert requiring human attention (finding, limit, traffic hit, scope edge)"
+    - kind: hh.h1.update
+      schema: events/hh.h1.update.json
+      description: "a HackerOne sync detected report state/activity changes"
+  studio:
+    sections:
+      - id: halo-hacker
+        title: Halo Hacker
+        blurb: Authorized security assessment — start with "How this works", set up an engagement, then watch findings come in.
+        help: >-
+          Everything the pack offers in one section, in the order you use it:
+          the "How this works" guide first, then engagement setup, the live
+          agent dashboard, the findings browser with its review pipeline, the
+          multi-project switcher, ingest visualization, and attack-path
+          mapping. The findings browser is the pack's own script (grant
+          studio-script to run it).
+        panels:
+          - id: guide
+            title: How this works
+            kind: markdown
+            source: studio/GUIDE.md
+            w: 24
+            h: 70
+            help: >-
+              The whole pack, step by step: enable and grant, set up an
+              engagement, watch the live dashboard, review findings, report.
+              Read this first.
+          - id: engage-form
+            title: Settings & engagement
+            kind: form
+            w: 24
+            h: 160
+            help: >-
+              The pack's settings form: the knowledge-base vault and proxy
+              first, then the active engagement — objective, scope, test type,
+              rules of engagement, X-header for traffic marking, and tester
+              identity. (A form panel always shows the whole settings schema;
+              the engagement fields are the second half.)
+          - id: live-dashboard
+            title: Live
+            kind: bundle
+            source: studio/live.js
+            w: 24
+            h: 140
+            help: >-
+              Agent dashboard: every live session with status and cwd, the
+              live-lines feed, traffic-watch status.
+          - id: findings-browser
+            title: Findings browser
+            kind: bundle
+            source: studio/findings.js
+            w: 24
+            h: 120
+            help: >-
+              Interactive findings browser with review pipeline: click a
+              finding for full detail — description, evidence ledger rows,
+              validation, reviewer decision, remediation, audit history.
+              Filter by severity/state/source, free-text search, copy as
+              markdown, open raw JSON. SSE-driven live updates. (Counts, the
+              findings table, and the lifecycle feed render inside this browser.)
+          - id: projects-view
+            title: Projects
+            kind: bundle
+            source: studio/projects.js
+            w: 24
+            h: 120
+            help: >-
+              Multi-program switcher: list bug bounty programs with platform,
+              finding count, and state. Click to switch; the entire cockpit
+              refreshes for that project.
+          - id: ingest-view
+            title: Ingest
+            kind: bundle
+            source: studio/ingest.js
+            w: 24
+            h: 120
+            help: >-
+              Ingest dashboard: source breakdown, trust tiers, topic routing
+              to testing lanes, recent-ingest log.
+          - id: attack-paths-graph
+            title: Attack paths
+            kind: bundle
+            source: studio/attack-paths.js
+            w: 24
+            h: 160
+            help: >-
+              Attack-path graph: findings connected by requires/grants
+              capability tokens — demonstrated (solid) vs projected (dashed) —
+              plus MITRE ATT&CK/ATLAS technique mapping.
+          - id: bounty-dashboard
+            title: Bug bounty
+            kind: bundle
+            source: studio/bounty.js
+            w: 24
+            h: 140
+            help: >-
+              HackerOne bug bounty cockpit in one tabbed panel: Overview
+              (balance, earnings, report-state summary, what changed since
+              last sync), Reports grouped by program with click-through
+              comment timelines and retest, the report-intent queue with H1's
+              AI review status, and Programs (your programs by ROI, scope and
+              weaknesses viewers, the public directory). Sync via
+              /hh-bounty sync.
+    palette:
+      - {id: open-guide, label: How this works (start here), action: "route:halo-hacker/guide"}
+      - {id: open-engage, label: Open settings & engagement, action: "route:halo-hacker/engage-form"}
+      - {id: open-live, label: Open live dashboard, action: "route:halo-hacker/live-dashboard"}
+      - {id: open-findings, label: Open the findings browser, action: "route:halo-hacker/findings-browser"}
+      - {id: open-projects, label: Open projects, action: "route:halo-hacker/projects-view"}
+      - {id: open-ingest, label: Open ingest dashboard, action: "route:halo-hacker/ingest-view"}
+      - {id: open-attack-paths, label: Open attack paths, action: "route:halo-hacker/attack-paths-graph"}
+      - {id: open-bounty, label: Open bug bounty dashboard, action: "route:halo-hacker/bounty-dashboard"}
+    attention:
+      hh.alert.critical-finding:
+        label: "Critical finding"
+        keys: {a: review, r: dismiss, s: pause}
+      hh.alert.traffic-hit:
+        label: "Traffic hit"
+        keys: {a: review, o: ignore}
+      hh.alert.playbook-limit:
+        label: "Playbook limit"
+        keys: {a: extend, o: stop}
+      hh.alert.scope-boundary:
+        label: "Scope edge"
+        keys: {a: approve, r: deny}
+      hh.alert.suggestion:
+        label: "Agent suggestion"
+        keys: {a: investigate, o: dismiss}
+    config_form: true
+  setup: []
+  fleet:
+    capabilities:
+      - name: halo-hacker.assessment
+        description: Runs an authorized security assessment on a harness that runs the pack
+        requires:
+          runtimes: [python]
+        capacity:
+          parallel: 1
+    inspector:
+      - label: "Halo Hacker: what a part needs"
+        source: fleet/notes.md
+    mission:
+      metadata:
+        pack: halo-hacker
+permissions:
+  - mcp:ingest
+  - mcp:cve
+  - mcp:traffic
+  - mcp:h1
+  - bash
+  - hooks
+  - studio-script
+  - network
+  - services
+config:
+  schema:
+    type: object
+    properties:
+      vault:
+        type: string
+        description: "Where the knowledge base lives (the folder the provenance ledger and distilled entries are written under). When empty the server refuses every tool."
+      active_project:
+        type: string
+        description: "The active project/program ID for multi-project tracking (bug bounty workflows)."
+      proxy:
+        type: string
+        enum: [caido, burp, none]
+        description: "The proxy to watch for real-time traffic analysis."
+      proxy_url:
+        type: string
+        description: "URL of the proxy API (defaults: Caido http://127.0.0.1:8080/graphql, Burp http://127.0.0.1:1337)."
+      objective:
+        type: string
+        description: "What the active engagement aims to test."
+      scope:
+        type: string
+        description: "In-scope targets (URLs, IP ranges) and exclusions."
+      test_type:
+        type: string
+        enum: [web-app, api, ai-security, cloud-config, network, custom]
+        description: "The type of penetration test."
+      rules:
+        type: string
+        description: "Rules of engagement: rate limits, off-limits hours, data handling."
+      x_header:
+        type: string
+        description: "Custom X-header for traffic marking (name and value, e.g. X-Pentest-ID: rolo-ukg-2026)."
+      tester_name:
+        type: string
+        description: "The tester's name, for traceability in findings and reports."
+      tester_email:
+        type: string
+        description: "The tester's email, for findings and bug bounty disclosure."
+      platform:
+        type: string
+        enum: [hackerone, bugcrowd, intigriti, custom]
+        description: "The bug bounty platform for this engagement."
+      h1_api_user:
+        type: string
+        description: "HackerOne API identifier (the label set when creating the token at https://hackerone.com/users/edit?selected_tab=api). Case-sensitive."
+      h1_api_token:
+        type: string
+        description: "HackerOne API token. Never committed; stored in machine-local pack config."
+    additionalProperties: false
+  defaults:
+    vault: ""
+    active_project: ""
+    proxy: "none"
+    proxy_url: ""
+    objective: ""
+    scope: ""
+    test_type: "web-app"
+    rules: ""
+    x_header: ""
+    tester_name: ""
+    tester_email: ""
+    platform: "custom"
+    h1_api_user: ""
+    h1_api_token: ""
+migrations:
+  - from: "0.9.0"
+    to: "1.0.0"
+    note: >-
+      Halo Hacker 1.0.0 is a major redesign: 30+ single-responsibility
+      methodology agent templates replace the 8 monolithic agents (the
+      originals are kept as hh-*.yaml in agents/ for backward compatibility).
+      New capabilities: traffic analysis MCP, multi-project tracking,
+      attention alerts, attack-path visualization. The pack requires
+      halo_api 1.4+ and Halo 3.5+. Existing findings, evidence, and
+      configuration are preserved.
+      Action: reinstall — `halo pack remove halo-hacker` then
+      `halo pack sources add https://github.com/roloVibes/halo-hacker`
+      and `halo pack install halo-hacker`.
